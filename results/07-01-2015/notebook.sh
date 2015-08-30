@@ -83,4 +83,10 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
 save.image(file="gene_cluster.RData")
 
 # 4. cluster genes
+load("gene_cluster.RData")
+require(graphics)
+hc <- hclust(dist(RET), "ave")
+plot(hc)
+
+
 
