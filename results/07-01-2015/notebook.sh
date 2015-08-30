@@ -54,17 +54,17 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
 # R
  name <- read.table('CPM_name.txt')
  data <- read.table(as.character(name[1,]))
- rownames(data) <- data[,1]
  for(i in 2:nrow(name)){
  	item <- name[i,]
  	tmp <- read.table(as.character(item))
  	data <- cbind(data, tmp[,2])
  }
+ rownames(data) <- data[,1]
  data <- data[,-1]
  # calculate mean and standard variance for each gene
  sd_rows <- apply(data, 1, sd)
  sd_rows[which(is.na(sd_rows))] = 0
- data <- data[which(sd_rows>5),]
+ data <- data[which(sd_rows>40),]
  
  sd_rows <- apply(data, 1, sd)
  mean_rows <- apply(data, 1, mean)
@@ -72,17 +72,13 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
  RET=data.frame()
  for(i in 1:nrow(data)){
  	print(i);
- 	RET = rbind(RET,(data[i,] - mean_rows[i])/sd_rows[i])
+ 	RET = rbind(RET, (data[i,] - mean_rows[i])/sd_rows[i])
  }
  
- write.table(RET, file = "CPM_norm.txt", append = FALSE, quote = FALSE, sep = "\t",
-                  eol = "\n", na = "NA", dec = ".", row.names = TRUE,
-                  col.names = FALSE, qmethod = c("escape", "double"),
-                  fileEncoding = "")
-
-save.image(file="gene_cluster.RData")
+#save.image(file="gene_cluster.RData")
 
 # 4. cluster genes
+
 load("gene_cluster.RData")
 require(graphics)
 hc <- hclust(dist(RET), "ave")
