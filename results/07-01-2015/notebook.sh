@@ -20,7 +20,7 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
 #0. delete all files under current folder with size 0
 find . -size  0 -print0 | xargs -0 rm
 
-#1. Read counting 
+#1. counting expression of genes counting 
 files=`ls $RNA_SEQ_DIR`
 for name in $files
 do
