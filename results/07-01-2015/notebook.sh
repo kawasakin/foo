@@ -47,7 +47,7 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
 # 	fi
 # done
 
-#3. normailization 
+#3. select a subset of genes with mean > 5 and sd > 10 to study 
 # get the name of all .CPM files
 # ls | grep CPM | grep -v name > CPM_name.txt 
 
@@ -63,26 +63,24 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
  data <- data[,-1]
  # calculate mean and standard variance for each gene
  sd_rows <- apply(data, 1, sd)
- sd_rows[which(is.na(sd_rows))] = 0
- data <- data[which(sd_rows>40),]
- 
- sd_rows <- apply(data, 1, sd)
  mean_rows <- apply(data, 1, mean)
  
- RET=data.frame()
- for(i in 1:nrow(data)){
- 	print(i);
- 	RET = rbind(RET, (data[i,] - mean_rows[i])/sd_rows[i])
- }
+ sd_rows[which(is.na(sd_rows))] = 0
+ mean_rows[which(is.na(mean_rows))] = 0
  
-#save.image(file="gene_cluster.RData")
+ data_filtered <- data[intersect(which(sd_rows>60), which(mean_rows>10)),]
 
-# 4. cluster genes
+# 4. kmean clustering
+cl <- Kmeans(data_filtered, 20, iter.max = 500, nstart = 1,
+         method = "correlation")
 
-load("gene_cluster.RData")
-require(graphics)
-hc <- hclust(dist(RET), "ave")
-plot(hc)
+corData <- cor(t(data_filtered))
+dissimilarity <- 1 - cor(t(data_filtered))
+distance <- as.dist(dissimilarity)
+plot(hclust(distance), 
+     main="Dissimilarity = 1 - Correlation", xlab="")
 
 
+hc <- hclust(distance) 
 
+fit <- kmeans(mydata, 5)
