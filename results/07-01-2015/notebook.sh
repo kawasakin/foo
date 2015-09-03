@@ -64,23 +64,26 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
  # calculate mean and standard variance for each gene
  sd_rows <- apply(data, 1, sd)
  mean_rows <- apply(data, 1, mean)
+
+ sd_cols <- apply(data, 2, sd)
+ mean_cols <- apply(data, 2, mean)
  
  sd_rows[which(is.na(sd_rows))] = 0
  mean_rows[which(is.na(mean_rows))] = 0
+ data_filtered <- data[intersect(which(sd_rows>70), which(mean_rows>20)), which(mean_cols>10)]
  
- data_filtered <- data[intersect(which(sd_rows>60), which(mean_rows>10)),]
+ # hcluster 
+ data_filtered = t(as.matrix(data_filtered))
+ medians = apply(data_filtered,2,median) 
+ mads = apply(data_filtered,2,mad)
+ data_filtered.scale = scale(data_filtered,center=medians,scale=mads)
+ data_filtered.dist = as.dist(1 - cor(data_filtered.scale))
+ data_filtered.dist[is.na(data_filtered.dist)]=0
+ hc = hclust(data_filtered.dist)
+ 
+ #4. normalize the expression level 
+ data_filtered_norm <- t(apply(data_filtered, 1, function(x){ (x-mean(x))/sd(x)} )) 
+ heatmap(data_filtered_norm)
 
-# 4. kmean clustering
-cl <- Kmeans(data_filtered, 20, iter.max = 500, nstart = 1,
-         method = "correlation")
-
-corData <- cor(t(data_filtered))
-dissimilarity <- 1 - cor(t(data_filtered))
-distance <- as.dist(dissimilarity)
-plot(hclust(distance), 
-     main="Dissimilarity = 1 - Correlation", xlab="")
 
 
-hc <- hclust(distance) 
-
-fit <- kmeans(mydata, 5)
