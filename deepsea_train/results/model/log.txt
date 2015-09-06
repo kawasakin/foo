@@ -1,0 +1,133 @@
+2015-09-06 14:14:51[model]:  [program started on Sun Sep  6 14:14:51 2015] 
+2015-09-06 14:14:51[model]:  [command line arguments] 
+2015-09-06 14:14:51[model]:  renorm true 
+2015-09-06 14:14:51[model]:  LearningRate 1 
+2015-09-06 14:14:51[model]:  seed 1 
+2015-09-06 14:14:51[model]:  continue false 
+2015-09-06 14:14:51[model]:  max_kernel_norm 0.9 
+2015-09-06 14:14:51[model]:  stdv 0.05 
+2015-09-06 14:14:51[model]:  LearningRateDecay 8e-07 
+2015-09-06 14:14:51[model]:  windowsize 1000 
+2015-09-06 14:14:51[model]:  momentum 0.9 
+2015-09-06 14:14:51[model]:  epochSize 110000 
+2015-09-06 14:14:51[model]:  setDevice 1 
+2015-09-06 14:14:51[model]:  batchSize 16 
+2015-09-06 14:14:51[model]:  save results/model 
+2015-09-06 14:14:51[model]:  weightDecay 1e-06 
+2015-09-06 14:14:51[model]:  L1Sparsity 0 
+2015-09-06 14:14:51[model]:  verbose false 
+2015-09-06 14:14:51[model]:  [----------------------] 
+2015-09-06 14:14:51[model]:  
+2015-09-06 14:14:51[model]:  [1;30m[0.0052s][0m 
+2015-09-06 14:15:00[model]:  /home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: module 'hdf5' not found:No LuaRocks module found for hdf5
+	no field package.preload['hdf5']
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5/init.lua'
+	no file './hdf5.lua'
+	no file '/home/r3fang/torch/install/share/luajit-2.1.0-alpha/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/.luarocks/lib/lua/5.1/hdf5.so'
+	no file '/home/r3fang/torch/install/lib/lua/5.1/hdf5.so'
+	no file './hdf5.so'
+	no file '/usr/local/lib/lua/5.1/hdf5.so'
+	no file '/usr/local/lib/lua/5.1/loadall.so'
+stack traceback:
+	[C]: in function 'error'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: in function 'require'
+	1_data.lua:2: in main chunk
+	[C]: in function 'dofile'
+	[string "_RESULT={dofile '1_data.lua'}"]:1: in main chunk
+	[C]: in function 'xpcall'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:630: in function 'repl'
+	...fang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:185: in main chunk
+	[C]: at 0x00405800 
+2015-09-06 14:15:00[model]:  [1;30m[0.0241s][0m 
+2015-09-06 14:15:00[model]:  /home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: loop or previous error loading module 'cunn'
+stack traceback:
+	[C]: in function 'error'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: in function 'require'
+	2_model.lua:3: in main chunk
+	[C]: in function 'dofile'
+	[string "_RESULT={dofile '2_model.lua'}"]:1: in main chunk
+	[C]: in function 'xpcall'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:630: in function 'repl'
+	...fang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:185: in main chunk
+	[C]: at 0x00405800 
+2015-09-06 14:15:00[model]:  [1;30m[0.0194s][0m 
+2015-09-06 14:15:00[model]:  
+2015-09-06 14:15:00[model]:  [1;30m[0.0203s][0m 
+2015-09-06 14:15:01[model]:  4_train.lua:8: attempt to index global 'cutorch' (a nil value)
+stack traceback:
+	4_train.lua:8: in main chunk
+	[C]: in function 'dofile'
+	[string "_RESULT={dofile '4_train.lua'}"]:1: in main chunk
+	[C]: in function 'xpcall'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:630: in function 'repl'
+	...fang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:185: in main chunk
+	[C]: at 0x00405800 
+2015-09-06 14:15:01[model]:  [1;30m[0.0242s][0m 
+2015-09-06 14:15:03[model]:  /home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: module 'hdf5' not found:No LuaRocks module found for hdf5
+	no field package.preload['hdf5']
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5/init.lua'
+	no file './hdf5.lua'
+	no file '/home/r3fang/torch/install/share/luajit-2.1.0-alpha/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/.luarocks/lib/lua/5.1/hdf5.so'
+	no file '/home/r3fang/torch/install/lib/lua/5.1/hdf5.so'
+	no file './hdf5.so'
+	no file '/usr/local/lib/lua/5.1/hdf5.so'
+	no file '/usr/local/lib/lua/5.1/loadall.so'
+stack traceback:
+	[C]: in function 'error'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: in function 'require'
+	1_data.lua:2: in main chunk
+	[C]: in function 'dofile'
+	[string "_RESULT={dofile '1_data.lua'}"]:1: in main chunk
+	[C]: in function 'xpcall'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:630: in function 'repl'
+	...fang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:185: in main chunk
+	[C]: at 0x00405800 
+2015-09-06 14:15:03[model]:  [1;30m[0.0063s][0m 
+2015-09-06 14:15:06[model]:  
+2015-09-06 14:15:06[model]:  [1;30m[0.0001s][0m 
+2015-09-06 14:15:06[model]:  
+2015-09-06 14:15:06[model]:  [1;30m[0.0001s][0m 
+2015-09-06 14:15:06[model]:  
+2015-09-06 14:15:06[model]:  [1;30m[0.0001s][0m 
+2015-09-06 14:15:06[model]:  
+2015-09-06 14:15:06[model]:  [1;30m[0.0001s][0m 
+2015-09-06 14:15:06[model]:  
+2015-09-06 14:15:06[model]:  [1;30m[0.0001s][0m 
+2015-09-06 14:15:06[model]:  /home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: module 'hdf5' not found:No LuaRocks module found for hdf5
+	no field package.preload['hdf5']
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/.luarocks/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5.lua'
+	no file '/home/r3fang/torch/install/share/lua/5.1/hdf5/init.lua'
+	no file './hdf5.lua'
+	no file '/home/r3fang/torch/install/share/luajit-2.1.0-alpha/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5.lua'
+	no file '/usr/local/share/lua/5.1/hdf5/init.lua'
+	no file '/home/r3fang/.luarocks/lib/lua/5.1/hdf5.so'
+	no file '/home/r3fang/torch/install/lib/lua/5.1/hdf5.so'
+	no file './hdf5.so'
+	no file '/usr/local/lib/lua/5.1/hdf5.so'
+	no file '/usr/local/lib/lua/5.1/loadall.so'
+stack traceback:
+	[C]: in function 'error'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:363: in function 'require'
+	1_data.lua:2: in main chunk
+	[C]: in function 'dofile'
+	[string "_RESULT={dofile '1_data.lua'}"]:1: in main chunk
+	[C]: in function 'xpcall'
+	/home/r3fang/torch/install/share/lua/5.1/trepl/init.lua:630: in function 'repl'
+	...fang/torch/install/lib/luarocks/rocks/trepl/scm-1/bin/th:185: in main chunk
+	[C]: at 0x00405800 
+2015-09-06 14:15:06[model]:  [1;30m[0.0068s][0m 

@@ -2,3 +2,4 @@
 *.err
 *.count.gz
 presentation.key
+*.mat
