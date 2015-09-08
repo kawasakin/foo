@@ -3,3 +3,5 @@
 *.count.gz
 presentation.key
 *.mat
+nbt3300-code/data/*
+
