@@ -15,8 +15,8 @@ OBJDIR    := $(BUILDDIR)/obj
 CPPDIR    := .
  
 NVCC = nvcc
-CC = g++
-LD = g++
+CC = /oasis/tscc/scratch/r3fang/usr/local/gcc-4.9.2/bin/g++
+LD = /oasis/tscc/scratch/r3fang/usr/local/gcc-4.9.2/bin/g++
 CFLAGS    := -m64 -fPIC -fvisibility=hidden \
              --param max-inline-recursive-depth=24 --param max-inline-recursive-depth-auto=24
 CXXFLAGS  := 

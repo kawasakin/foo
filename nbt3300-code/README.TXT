@@ -29,7 +29,6 @@ PIL 1.1.7+
 Visual C++ 2012 / GCC 4.8+
 
 
-
 BUILDING (WINDOWS)
 ------------------
 You must have the CUDA 7.0+ runtime DLLs somewhere in your PATH. 
@@ -39,11 +38,12 @@ You need Visual C++ 2012 to compile the internal libraries:
    libs/kangaroo/vcproj/kangaroo.sln  (open and build)
 
 
+
 BUILDING (LINUX)
 ----------------
 You need g++ 4.8+.
 The library makefiles assume cuda is installed to /usr/local/cuda
-but this can be overwridden with environment variable CUDADIR.
+but this can be overridden with environment variable CUDADIR.
 
 Once you've unzipped the source, compile the sub-projects as follows:
    cd libs/smat/src
