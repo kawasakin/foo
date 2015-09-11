@@ -1,45 +1,38 @@
 # import library
-import numpy
 import theano
-import theano.tensor as T
-from theano import config
+from theano import tensor as T
+import numpy as np
 
-rng = numpy.random
-N = 400                  # number of points
-feats = 784              # number of features
-D = (rng.randn(N, feats).astype(numpy.float32), rng.randint(size=N, low=0, high=2).astype(numpy.float32))
-training_steps = 10000
+# simulate data
+trX = np.linspace(-1, 1, 101)
+trY = 2 * trX + np.random.randn(*trX.shape) * 0.33
 
-# Declare Theano symbolic variables
-x = T.matrix("x", dtype=config.floatX)
-y = T.vector("y", dtype=config.floatX)
-# shared variables
-w = theano.shared(rng.randn(feats).astype(theano.config.floatX), name="w")
-b = theano.shared(numpy.asarray(0., dtype=theano.config.floatX), name="b")
+# symbolic declaim
+X = T.scalar('X')
+Y = T.scalar('Y')
 
-print("Initial model:")
-print(w.get_value())
-print(b.get_value())
+# shared variable
+w = theano.shared(np.asarray(0., dtype=theano.config.floatX))
 
-p_1 = 1 / (1 + T.exp(-T.dot(x, w) - b))        # Probability that target = 1
-prediction = p_1 > 0.5                         # The prediction thresholded
-xent = -y * T.log(p_1) - (1-y) * T.log(1-p_1)  # Cross-entropy loss function
-cost = xent.mean() + 0.01 * (w ** 2).sum()     # The cost to minimize with L2 penality
-gw, gb = T.grad(cost, [w, b])             # Compute the gradient of the cost
-# Compile
-train = theano.function(
-          inputs=[x,y],
-          outputs=[prediction, xent],
-          updates=((w, w - 0.1 * gw), (b, b - 0.1 * gb)))
+# Model
+y = X * w
 
-predict = theano.function(inputs=[x], outputs=prediction)
-for i in range(training_steps):
-    pred, err = train(D[0], D[1])
+# define the cost
+cost = T.mean(T.sqr(y - Y))
 
-print("Final model:")
-print(w.get_value())
-print(b.get_value())
-print("target values for D:")
-print(D[1])
-print("prediction on D:")
-print(predict(D[0]))
+# define the gradiant
+gradient = T.grad(cost=cost, wrt=w)
+
+# define updates and learning rate - 0.01
+updates = [[w, w - gradient * 0.01]]
+
+# compile the function
+train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+
+# traning (# of steps)
+for i in range(100):
+    for x, y in zip(trX, trY):
+        train(x, y)
+
+# output
+print w.get_value() #something around 2
