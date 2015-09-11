@@ -14,8 +14,8 @@ training_steps = 10000
 x = T.matrix("x", dtype=config.floatX)
 y = T.vector("y", dtype=config.floatX)
 # shared variables
-w = theano.shared(rng.randn(feats), name="w")
-b = theano.shared(0., name="b")
+w = theano.shared(rng.randn(feats).astype(theano.config.floatX), name="w")
+b = theano.shared(numpy.asarray(0., dtype=theano.config.floatX), name="b")
 
 print("Initial model:")
 print(w.get_value())
