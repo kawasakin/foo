@@ -113,4 +113,23 @@ write.table(dat, file = "mESC_sample_features.txt", append = FALSE, quote = FALS
                 col.names = FALSE, qmethod = c("escape", "double"),
                 fileEncoding = "")
 
+# 4. predict by logisitic regression
+library(lars)
+dat = read.table("mESC_sample_features.txt")
+colnames(dat)[ncol(dat)] = "label"
+index.train = sample(1:nrow(dat), 4*nrow(dat)/5)
+dat.train = dat[index.train,]
+dat.test = dat[-index.train,]
+
+logr_vm <- glm(label ~ ., data=dat.train, family=binomial(link="logit"))
+order(logr_vm$coefficients, decreasing=TRUE)
+
+pred <- predict(logr_vm, dat.test, type="response")
+
+pred[which(pred>0.6)]=1
+pred[which(pred<=0.6)]=0
+length(which(pred==dat.test$label))
+
+
+
 
