@@ -52,6 +52,7 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
 # ls | grep CPM | grep -v name > CPM_name.txt 
 
 # R
+ library(Hmisc)
  name <- read.table('CPM_name.txt')
  data <- read.table(as.character(name[1,]))
  for(i in 2:nrow(name)){
@@ -70,20 +71,26 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
  
  sd_rows[which(is.na(sd_rows))] = 0
  mean_rows[which(is.na(mean_rows))] = 0
- data_filtered <- data[intersect(which(sd_rows>70), which(mean_rows>20)), which(mean_cols>10)]
+ data_filtered <- data[intersect(which(sd_rows>10), which(mean_rows>10)), which(mean_cols>10)]
  
  # hcluster 
- data_filtered = t(as.matrix(data_filtered))
- medians = apply(data_filtered,2,median) 
- mads = apply(data_filtered,2,mad)
- data_filtered.scale = scale(data_filtered,center=medians,scale=mads)
- data_filtered.dist = as.dist(1 - cor(data_filtered.scale))
- data_filtered.dist[is.na(data_filtered.dist)]=0
- hc = hclust(data_filtered.dist)
+ data_filtered = t(as.matrix(data_filtered)) 
+ corRaw = cor(data_filtered, method="pearson")
+ dissimilarity <- 1 - corRaw
+ distance <- as.dist(dissimilarity)
+ hc <- hclust(distance)
+ clusters <- cutree(hc, h = 0.6)
+ data_filtered <- data_filtered[,order(clusters)]
+ clusters <- clusters[order(clusters)]
  
- #4. normalize the expression level 
- data_filtered_norm <- t(apply(data_filtered, 1, function(x){ (x-mean(x))/sd(x)} )) 
- heatmap(data_filtered_norm)
-
+ clusters.sel <- clusters[clusters %in% as.numeric(which(table(clusters)>50))]
+ data.sel <- data_filtered[,which(colnames(data_filtered)%in%names(clusters.sel))]
+ 
+ rm(corRaw)
+ rm(dissimilarity)
+ rm(distance)
+ rm(hc)
+ 
+ save.images("gene_cluster.RData")
 
 
