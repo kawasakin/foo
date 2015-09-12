@@ -86,11 +86,19 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/07-01-2015/
  clusters.sel <- clusters[clusters %in% as.numeric(which(table(clusters)>50))]
  data.sel <- data_filtered[,which(colnames(data_filtered)%in%names(clusters.sel))]
  
+ library(spatstat)
+ corRaw <- cor(data.sel)
+ plot(im(corRaw[nrow(corRaw):1,]), main="Correlation Matrix Map")
+ 
  rm(corRaw)
  rm(dissimilarity)
  rm(distance)
  rm(hc)
  
  save.images("gene_cluster.RData")
-
-
+ 
+ data.sel <- t(data.sel)
+ data.sel.scale <- t(apply(data.sel, 1, function(x) (x-min(x))/(max(x)-min(x))))
+ plot(im(data.sel.scale[nrow(data.sel.scale):1,]))
+ 
+ heatmap(data.sel.scale, col=topo.colors(100))
