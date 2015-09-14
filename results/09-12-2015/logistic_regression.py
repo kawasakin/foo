@@ -42,9 +42,8 @@ update = [[w, w - gradient * 0.05]]
 train = theano.function(inputs=[X, Y], outputs=cost, updates=update, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=y_pred, allow_input_downcast=True)
 
-for i in range(100):
+for i in range(500):
     for start, end in zip(range(0, len(trX), 128), range(128, len(trX), 128)):
         cost = train(trX[start:end], trY[start:end])
-    #print i, np.mean(np.argmax(teY, axis=1) == predict(teX))
-print i, np.mean(np.argmax(teY, axis=1) == predict(teX))
+    print i, np.mean(np.argmax(teY, axis=1) == predict(teX))
 

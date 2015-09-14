@@ -28,17 +28,32 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/
 cat $GTF | awk '{print $1, $7, $16}' - | sort - | uniq - > genes.gtf 
 # replace " and ;  with nothing 
 
-# 2. obtain [-3000, +2000] region of the most & least expressed 1000 as candiates
+-------------------------------------------------------------------------------------------
+# 2. get strand infor for expression data
 data = read.table("mESC-zy27.gene.expr", head=T)
-data.sorted = data[order(data$FPKM),]
-data.sel = rbind(head(data.sorted, n=1200), tail(data.sorted, n=1200))
-data.sel$label = c(rep(0, 1200), rep(1, 1200))
 genes = read.table("genes.gtf")
 colnames(genes) = c("chr", "strand", "gene_id")
-names <- unique(intersect(data.sel$gene_id, genes$gene_id))
+names <- unique(intersect(data$gene_id, genes$gene_id))
+data.sel <- data[which(data$gene_id %in% names),]
+genes.sel <- genes[which(genes$gene_id %in% names),]
+data.sel$strand = genes.sel$strand[match(data.sel$gene_id, genes.sel$gene_id)]
+
+
+
+# 2. obtain [-3000, +2000] region of the most & least expressed 1000 as candiates
+
+data <- data[which(data$gene_id %in% names),]
+genes.sel <- genes[which(genes$gene_id %in% names),]
+
+data.sorted = data[order(data$FPKM),]
+data.sel = rbind(head(data.sorted, n), tail(data.sorted, n))
+data.sel$label = c(rep(0, n), rep(1, n))
+genes = read.table("genes.gtf")
+colnames(genes) = c("chr", "strand", "gene_id")
 
 data.sel <- data.sel[which(data.sel$gene_id %in% names),]
 genes.sel <- genes[which(genes$gene_id %in% names),]
+
 # add strand
 data.sel$strand = genes.sel$strand[match(data.sel$gene_id, genes.sel$gene_id)]
 res = data.frame()
@@ -50,24 +65,23 @@ for(i in 1:nrow(data.sel)){
 		res = rbind(res, data.frame(chr=x$chr, left=x$left-3000, right=x$left+2000, strand=x$strand, FPKM=x$FPKM, gene_id=x$gene_id, label=x$label))
 	}
 }
-write.table(res, file = "mESC_sample.txt", append = FALSE, quote = FALSE, sep = "\t",
-            eol = "\n", na = "NA", dec = ".", row.names = FALSE,
-            col.names = FALSE, qmethod = c("escape", "double"),
-            fileEncoding = "")
 
 # 3. Obtain the feature vector
 library("GenomicRanges")
 bin_size = 50
 region_size = 5000
 bin_num = region_size/bin_size
-data = read.table("mESC_sample.txt")
+data = res
 data$index = 1:nrow(data)
 res = data.frame()
+
+
 for(i in 1:nrow(data)){
 	x = data[i,]
 	y = data.frame(chr=x[1], start=seq(as.numeric(x[2]), as.numeric(x[3]), bin_size)[1:bin_num-1], end= seq(as.numeric(x[2]), as.numeric(x[3]), bin_size)[2:bin_num], gene_id=x$index, index=1:(bin_num-1))
 	res = rbind(res, y)
 }
+
 colnames(res) = c("chr", "start", "end", "gene_id", "bin_id")
 res.gr <- with(res, GRanges(chr, IRanges(start+1, end), strand="*", gene_id, bin_id))
 
@@ -83,10 +97,10 @@ file.names = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/wgEncodeLicrHistoneEsb4H3k4me3ME0C57bl6StdPk.broadPeak",
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/wgEncodeLicrTfbsEsb4P300ME0C57bl6StdPk.broadPeak",
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/wgEncodeLicrTfbsEsb4CtcfME0C57bl6StdPk.broadPeak",
-"/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/wgEncodeLicrTfbsEsb4Pol2ME0C57bl6StdPk.broadPeak")
+"/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/wgEncodeLicrTfbsEsb4Pol2ME0C57bl6StdPk.broadPeak"
+)
 
-feat.names = c(
-"CHD2", "MAFK", "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
+feat.names = c("CHD2", "MAFK", "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
 
 colNum = ncol(res)+1
 for(i in 2:length(feat.names)){
@@ -106,29 +120,17 @@ res.array <- lapply(res.list, function(x){
 })
 
 dat = data.frame(t(data.frame(res.array)))
-dat$label = data$V7
+dat$label = data$label
 
 write.table(dat, file = "mESC_sample_features.txt", append = FALSE, quote = FALSE, sep = "\t",
                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                 col.names = FALSE, qmethod = c("escape", "double"),
                 fileEncoding = "")
 
-# 4. predict by logisitic regression
-library(lars)
-dat = read.table("mESC_sample_features.txt")
-colnames(dat)[ncol(dat)] = "label"
-index.train = sample(1:nrow(dat), 4*nrow(dat)/5)
-dat.train = dat[index.train,]
-dat.test = dat[-index.train,]
+# predict by nural nets
+python net.py
+-------------------------------------------------------------------------------------------
 
-logr_vm <- glm(label ~ ., data=dat.train, family=binomial(link="logit"))
-order(logr_vm$coefficients, decreasing=TRUE)
-
-pred <- predict(logr_vm, dat.test, type="response")
-
-pred[which(pred>0.6)]=1
-pred[which(pred<=0.6)]=0
-length(which(pred==dat.test$label))
 
 
 
