@@ -58,7 +58,7 @@ bin_num = (upstream_region+downstream_region)/bin_size
 
 # split data by the strand
 data.list = split(data, data$strand)
-res <- lapply(data.list, function(x){
+res.list <- lapply(data.list, function(x){
 	if(as.character(x$strand[1])=="+"){
 		x$right = x$left + downstream_region
 		x$left = x$left - upstream_region
@@ -68,9 +68,10 @@ res <- lapply(data.list, function(x){
 	}
 	return(x)
 })
-promoters = data.frame(do.call(rbind, res))
-promoters$index = 1:nrow(promoters)
 
+promoters = data.frame(do.call(rbind, res.list))
+promoters = promoters[order(promoters$FPKM),]
+promoters$index = 1:nrow(promoters)
 promoters.list = split(promoters, promoters$index)
 
 res.list <- mclapply(promoters.list, function(x){
@@ -82,11 +83,10 @@ res.list <- mclapply(promoters.list, function(x){
 	return(y)
 }, mc.cores=10)
 
-res = data.frame(do.call(rbind, res.list))
+bins = data.frame(do.call(rbind, res.list))
 
-colnames(res) = c("chr", "start", "end", "gene_id", "bin_id", "strand")
-res.gr <- with(res, GRanges(chr, IRanges(start+1, end), strand="*", gene_id, bin_id))
-
+colnames(bins) = c("chr", "start", "end", "gene_id", "bin_id", "strand")
+bins.gr <- with(bins, GRanges(chr, IRanges(start+1, end), strand="*", gene_id, bin_id))
 
 file.names = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/E14_CHD2.bed",
@@ -109,25 +109,27 @@ file.names = c(
 
 feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384",  "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
 
-colNum = ncol(res)+1
+colNum = ncol(bins)+1
 for(i in 1:length(feat.names)){
 	feat = read.table(file.names[i])
 	colnames(feat)[1:3] = c("chr", "start", "end")
 	feat.gr <- with(feat, GRanges(chr, IRanges(start+1, end), strand="*"))
-	ov <- findOverlaps(res.gr, feat.gr)
-	res[,colNum] = 0
-	res[unique(ov@queryHits), colNum] = 1
-	colnames(res)[colNum] = feat.names[i]
+	ov <- findOverlaps(bins.gr, feat.gr)
+	bins[,colNum] = 0
+	bins[unique(ov@queryHits), colNum] = 1
+	colnames(bins)[colNum] = feat.names[i]
 	colNum =  colNum + 1
 }
 
-res.list = split(res, res$gene_id)
-res.array <- lapply(res.list, function(x){rapply(x[,7:ncol(x)], c)})
+X = t(bins[,7:ncol(bins)])
+Y = promoters$FPKM
 
-res <- data.frame(do.call(rbind, res.array))
-res$FPKM = promoters$FPKM
-res.sort <- res[order(res$FPKM),]
-write.table(res.sort, file = "mESC_sample_features.txt", append = FALSE, 
+write.table(X, file = "dat_X.txt", append = FALSE, 
+			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
+			dec = ".", row.names = FALSE, col.names = FALSE, 
+			qmethod = c("escape", "double"), fileEncoding = "")
+
+write.table(Y, file = "dat_Y.txt", append = FALSE, 
 			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
 			dec = ".", row.names = FALSE, col.names = FALSE, 
 			qmethod = c("escape", "double"), fileEncoding = "")
