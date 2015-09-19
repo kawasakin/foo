@@ -60,11 +60,10 @@ trX, teX, trY, teY = mnist(onehot=True)
 trX = trX.reshape(-1, 1, 28, 28)
 teX = teX.reshape(-1, 1, 28, 28)
 
-trX = trX[1:100]
-teX = teX[1:100]
-trY = trY[1:100]
-teY = teY[1:100]
-
+trX = trX[1:10000]
+trY = trY[1:10000]
+teX = teX[1:10000]
+teY = teY[1:10000]
 
 X = T.ftensor4()
 Y = T.fmatrix()
@@ -87,6 +86,5 @@ predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
 for i in range(100):
     for start, end in zip(range(0, len(trX), 10), range(10, len(trX), 10)):
         cost = train(trX[start:end], trY[start:end])
-        print cost
     print np.mean(np.argmax(teY, axis=1) == predict(teX))
 
