@@ -42,13 +42,16 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     return updates
 
 def load_data(dataset, num_cases, n):
-    with open("dat_X.txt") as fin:
+    with open("dat_p.txt") as fin:
         dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
-    dat_X = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
+    dat_p = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
+
+    with open("dat_e.txt") as fin:
+        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_e = np.transpose(dat.reshape(-1, 1, 79, 17), (0, 1, 3, 2))
     
     with open("dat_Y.txt") as fin:
         dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
-
     i = int(max(dat_Y))+1
     for p in [min(dat_Y)-0.1] + [np.percentile(dat_Y, x*100) for x in np.arange(0, 1, 1/float(n))[1:]] + [max(dat_Y)+0.1]:
         dat_Y[dat_Y <= p] = i
@@ -56,19 +59,34 @@ def load_data(dataset, num_cases, n):
     dat_Y = dat_Y - min(dat_Y) + 1
     dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
 
-    num = dat_X.shape[0]
-    dat_X = dat_X[range(10000) + range(num-10000, num)]
-    dat_Y = dat_Y[range(10000) + range(num-10000, num)]
+    with open("interaction.txt") as fin:
+        loops = np.loadtxt(StringIO(fin.read()), dtype="int")     
+    
+    train_index = list(set(xrange(dat_p.shape[0])) - set(loops[:,0]-1))
+    random.shuffle(train_index)
+    test_index = loops[:,0]-1
+    
+    trX = dat_p[train_index,]
+    trY = dat_Y[train_index,]
+    teX = dat_p[test_index,]
+    teY = dat_Y[test_index,]
+    
+    
+    #num = dat_X.shape[0]
+    #dat_X = dat_X[range(10000) + range(num-10000, num)]
+    #dat_Y = dat_Y[range(10000) + range(num-10000, num)]
 
-    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
-    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
-    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
+    #train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+    #test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+    #return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
 
 def model(X, w1, w2, w3, p_drop_conv, p_drop_hidden):
-    l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), (1, 90)), p_drop_conv), outdim=2)
-    l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
-    pyx = softmax(T.dot(l2, w3))    
-    return pyx
+    l1a = rectify(conv2d(X, w1, border_mode='valid'))
+    #l1 = T.flatten(dropout(max_pool_2d(l1a, ), p_drop_conv), outdim=2)
+    #l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
+    #pyx = softmax(T.dot(l2, w3))    
+    return l1a
+
 
 dataset = "mESC-zy27.gene.expr.sel.feat"
 num_cases = 100
@@ -87,6 +105,12 @@ Y = T.fmatrix()
 w1 = init_weights((70, 1, 17, 10))
 w2 = init_weights((70, 200))
 w3 = init_weights((200, 2))
+
+l1a = rectify(conv2d(X, w1, border_mode='valid'))
+
+train = theano.function(inputs=[X], outputs=l1a, allow_input_downcast=True)
+
+a = train(trX)
 
 noise_py_x = model(X, w1, w2, w3, 0.2, 0.5)
 py_x = model(X, w1, w2, w3, 0., 0.)
