@@ -44,7 +44,7 @@ write.table(data.sel, file = "mESC-zy28.gene.expr.sel", append = FALSE, quote = 
                  fileEncoding = "")
 # -------------------------------------------------------------------------------------------
 
-#3. get features
+#3. get features for promoters
 library(GenomicRanges)
 library(parallel)
 
@@ -133,4 +133,57 @@ write.table(Y, file = "dat_Y.txt", append = FALSE,
 			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
 			dec = ".", row.names = FALSE, col.names = FALSE, 
 			qmethod = c("escape", "double"), fileEncoding = "")
+
+
+#4. get features for promoters
+
+genes = read.table("mESC-zy27.gene.expr.sel", head=T)
+genes$FPKM = log(genes$FPKM)
+
+
+upstream_region = 3000
+downstream_region = 2000
+bin_size = 50
+bin_num = (upstream_region+downstream_region)/bin_size
+genes = genes[order(genes$FPKM),]
+genes = genes[-1000,-1]
+# split data by the strand
+genes.list = split(genes, genes$strand)
+res.list <- lapply(genes.list, function(x){
+	if(as.character(x$strand[1])=="+"){
+		x$right = x$left + downstream_region
+		x$left = x$left - upstream_region
+	}else{
+		x$left = x$right - downstream_region
+		x$right = x$right + upstream_region
+	}
+	return(x)
+})
+
+promoters = data.frame(do.call(rbind, res.list))
+promoters = promoters[order(promoters$FPKM),]
+promoters$index = 1:nrow(promoters)
+#promoters.list = split(promoters, promoters$index)
+
+loops = read.table("/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/CHIC/ESC_promoter_other_significant_interactions.txt", sep="\t", head=T)
+loops$index = 1:nrow(loops)
+
+enhancers = read.table("mESC.enhancer.txt")
+colnames(enhancers) = c("chr", "start", "end")
+enhancers$index = 1:nrow(enhancers)
+
+promoters.gr <- with(promoters, GRanges(chr, IRanges(left+1, right), strand="*", index, FPKM))
+loops.promoter.gr <- with(loops, GRanges(chr.bait, IRanges(start.bait+1, end.bait), strand="*", index, log.observed.expected.))
+loops.enhancer.gr <- with(loops, GRanges(chr, IRanges(start+1, end), strand="*", index, log.observed.expected.))
+enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start+1, end), strand="*", index))
+
+ov1 <- findOverlaps(promoters.gr, loops.promoter.gr)
+ov2 <- findOverlaps(loops.promoter.gr, enhancers.gr)
+
+matches <- ov2@subjectHits[match(ov1@subjectHits, ov2@queryHits)]
+matches[which(is.na(matches))] = 0 
+matches <- unique(data.frame(promoters = ov1@queryHits, enhancers=matches))
+matches <- matches[which(matches$enhancers>0),]
+
+
 
