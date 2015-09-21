@@ -80,13 +80,11 @@ def load_data(dataset, num_cases, n):
     #test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
     #return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
 
-def model(X, w1, w2, w3, p_drop_conv, p_drop_hidden):
-    l1a = rectify(conv2d(X, w1, border_mode='valid'))
-    #l1 = T.flatten(dropout(max_pool_2d(l1a, ), p_drop_conv), outdim=2)
-    #l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
-    #pyx = softmax(T.dot(l2, w3))    
-    return l1a
-
+def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
+    l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
+    l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
+    pyx = softmax(T.dot(l2, w3))    
+    return pyx
 
 dataset = "mESC-zy27.gene.expr.sel.feat"
 num_cases = 100
@@ -106,14 +104,9 @@ w1 = init_weights((70, 1, 17, 10))
 w2 = init_weights((70, 200))
 w3 = init_weights((200, 2))
 
-l1a = rectify(conv2d(X, w1, border_mode='valid'))
+noise_py_x = model(X, w1, w2, w3, (1, 90), 0.2, 0.5)
 
-train = theano.function(inputs=[X], outputs=l1a, allow_input_downcast=True)
-
-a = train(trX)
-
-noise_py_x = model(X, w1, w2, w3, 0.2, 0.5)
-py_x = model(X, w1, w2, w3, 0., 0.)
+py_x = model(X, w1, w2, w3, (1, 90), 0., 0.)
 y_x = T.argmax(py_x, axis=1)
 
 
@@ -124,8 +117,38 @@ updates = RMSprop(cost, params, lr=0.01)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
 
+
+X1 = teX[1][0]
+X2 = dat_e[2][0]
+X = np.concatenate((X1,X2), axis=1)
+
+
 for i in range(100):
     for start, end in zip(range(0, len(trX), 400), range(400, len(trX), 400)):
         cost = train(trX[start:end], trY[start:end])
     print np.mean(np.argmax(teY, axis=1) == predict(teX))
+
+
+py_x = model(X, w1, w2, w3, (1, 90), 0., 0.)
+y_x = T.argmax(py_x, axis=1)
+predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
+
+
+
+a = np.dstack((teX[0], dat_e[pair[0][1]]))
+b = np.dstack((teX[1], dat_e[pair[1][1]]))
+a = numpy.vstack((a,b))
+
+np.random.shuffle(pair[i][1])
+
+for i in xrange(2, teX.shape[0]):
+    b = np.dstack((teX[i], dat_e[pair[i][1]]))
+    a = numpy.vstack((a,b))
+    
+a = a.reshape(4175, 1, 17, 178)    
+py_x = model(X, w1, w2, w3, (1, 500), 0., 0.)
+y_x = T.argmax(py_x, axis=1)
+predict = theano.function(inputs=[X], outputs=y_x, allow_input_downcast=True)
+
+print np.mean(np.argmax(teY, axis=1) == predict(a))
     
