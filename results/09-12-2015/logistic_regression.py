@@ -13,32 +13,50 @@ def init_weights(shape):
 def model(X, w):
     return T.nnet.softmax(T.dot(X, w))
 
-def load_data(dataset, num_cases, n):
-    with open(dataset) as fin:
-        dat = np.loadtxt(StringIO(fin.read()), dtype="float32")    
-    dat = dat[range(num_cases/2) + range((dat.shape[0]-num_cases/2), dat.shape[0]), ]  
-    dat_X = dat[:,:(dat.shape[1]-1)]    
-    dat_Y = dat[:,dat.shape[1]-1]
+def load_data(n):
+    with open("dat_p.txt") as fin:
+        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_p = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
+
+    with open("dat_e.txt") as fin:
+        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_e = np.transpose(dat.reshape(-1, 1, 79, 17), (0, 1, 3, 2))
+    
+    with open("dat_Y.txt") as fin:
+        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
+
     i = int(max(dat_Y))+1
     for p in [min(dat_Y)-0.1] + [np.percentile(dat_Y, x*100) for x in np.arange(0, 1, 1/float(n))[1:]] + [max(dat_Y)+0.1]:
         dat_Y[dat_Y <= p] = i
         i += 1 
     dat_Y = dat_Y - min(dat_Y) + 1
     dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
-    train_index = random.sample(xrange(dat.shape[0]), dat.shape[0]*4/5)
-    test_index  = sorted(list(set(range(dat.shape[0]))-set(train_index)))
-    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
+
+    with open("interaction.txt") as fin:
+        loops = np.loadtxt(StringIO(fin.read()), dtype="int") - 1
     
+    train_index = list(set(xrange(dat_p.shape[0])) - set(loops[:,0]))
+    random.shuffle(train_index)
+    test_index = loops[:,0]
+    
+    trX = dat_p[train_index,]
+    trY = dat_Y[train_index,]
+    teX = dat_p[test_index,]
+    teX_enhancer = dat_e
+    teY = dat_Y[test_index,]    
+    return trX, trY, teX, teY, teX_enhancer, loops
+  
     
     
 dataset = "mESC-zy27.gene.expr.sel.feat"
-num_cases = 2000
-num_class = 2
-sigma = 0.05 # learning rate
 epos = 200
 min_batch = 500
+n=2
+sigma = 0.05
 
-trX, trY, teX, teY = load_data(dataset, num_cases, num_class)
+trX, trY, teX, teY, teX_enhancer, pair = load_data(num_class)
+trX = trX.reshape(8598, -1)
+teX = teX.reshape(2547, -1)
 
 X = T.fmatrix()
 Y = T.fmatrix()
