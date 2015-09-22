@@ -79,27 +79,26 @@ def load_data_0(n):
     teX = dat_p[test_index,]
     teX_enhancer = dat_e
     teY = dat_Y[test_index,]    
-    
     return trX, trY, evX, evY, teX, teY, teX_enhancer, loops
 
-def load_data_1(n):
-    with open("dat_p.txt") as fin:
-        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
-    dat_X = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
-    
-    with open("dat_Y.txt") as fin:
-        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
-
-    i = int(max(dat_Y))+1
-    for p in [min(dat_Y)-0.1] + [np.percentile(dat_Y, x*100) for x in np.arange(0, 1, 1/float(n))[1:]] + [max(dat_Y)+0.1]:
-        dat_Y[dat_Y <= p] = i
-        i += 1 
-    dat_Y = dat_Y - min(dat_Y) + 1
-    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
- 
-    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
-    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
-    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
+#def load_data_1(n):
+#    with open("dat_p.txt") as fin:
+#        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+#    dat_X = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
+#    
+#    with open("dat_Y.txt") as fin:
+#        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
+#
+#    i = int(max(dat_Y))+1
+#    for p in [min(dat_Y)-0.1] + [np.percentile(dat_Y, x*100) for x in np.arange(0, 1, 1/float(n))[1:]] + [max(dat_Y)+0.1]:
+#        dat_Y[dat_Y <= p] = i
+#        i += 1 
+#    dat_Y = dat_Y - min(dat_Y) + 1
+#    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+# 
+#    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+#    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+#    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
     
     
 def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
@@ -108,34 +107,43 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
+
 num_class = 2
+trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
 p_drop_conv = 0.3
 p_drop_hidden = 0.5
+mini_batch_size = 200
 
-trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
+lr = 0.0001
+epchs = 50
+
+feat_num = 17
+convolution_window_width = 10
+convolution_unit_num = 50
+hidden_unit_num = 100
 
 X = T.ftensor4()
 Y = T.fmatrix()
 
-w1 = init_weights((70, 1, 17, 10))
-w2 = init_weights((70, 200))
-w3 = init_weights((200, 2))
+w1 = init_weights((convolution_unit_num, 1, feat_num, convolution_window_width))
+w2 = init_weights((convolution_unit_num, hidden_unit_num))
+w3 = init_weights((hidden_unit_num, num_class))
 
-noise_py_x = model(X, w1, w2, w3, (1, 500), 0.2, 0.5)
+noise_py_x = model(X, w1, w2, w3, (1, 500), p_drop_conv, p_drop_hidden)
 py_x = model(X, w1, w2, w3, (1, 500), 0., 0.)
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 
 params = [w1, w2, w3]
-updates = RMSprop(cost, params, lr=0.02)
+updates = RMSprop(cost, params, lr)
 
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
-for i in range(500):
-    for start, end in zip(range(0, len(trX), 200), range(200, len(trX), 200)):
+for i in range(epchs):
+    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[start:end], trY[start:end])
-    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1)), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
 
 #print np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
 #print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_w), axis=1))
