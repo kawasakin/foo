@@ -42,7 +42,7 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((p, p - lr * g))
     return updates
 
-def load_data_1(n):
+def load_data_0(n):
     with open("dat_p.txt") as fin:
         dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
     dat_p = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
@@ -68,12 +68,19 @@ def load_data_1(n):
     random.shuffle(train_index)
     test_index = loops[:,0]
     
+    eval_index = train_index[:870]
+    train_index = train_index[870:]
+    
     trX = dat_p[train_index,]
     trY = dat_Y[train_index,]
+    evX = dat_p[eval_index,]
+    evY = dat_Y[eval_index,]
+    
     teX = dat_p[test_index,]
     teX_enhancer = dat_e
     teY = dat_Y[test_index,]    
-    return trX, trY, teX, teY, teX_enhancer, loops
+    
+    return trX, trY, evX, evY, teX, teY, teX_enhancer, loops
 
 def load_data_1(n):
     with open("dat_p.txt") as fin:
@@ -105,9 +112,7 @@ num_class = 2
 p_drop_conv = 0.3
 p_drop_hidden = 0.5
 
-trX, trY, teX, teY, teX_enhancer, pair = load_data(num_class)
-
-trX, trY, teX, teY = load_data_1(num_class)
+trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
 
 X = T.ftensor4()
 Y = T.fmatrix()
@@ -130,23 +135,34 @@ predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 for i in range(500):
     for start, end in zip(range(0, len(trX), 200), range(200, len(trX), 200)):
         cost = train(trX[start:end], trY[start:end])
-    print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
-    
-import numpy
+    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1)), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+
+#print np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
+#print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_w), axis=1))
+
+#pearsonr(np.arange(0,teY.shape[0]), predict(teX)[:,1])
+
 # with enhancer
-dat_e = teX_enhancer
-np.random.shuffle(pair[:,1])
-a = np.dstack((teX[0], dat_e[pair[0][1]]))
-b = np.dstack((teX[1], dat_e[pair[1][1]]))
-a = numpy.vstack((a,b))
-
-for i in xrange(2, teX.shape[0]):
-    b = np.dstack((teX[i], dat_e[pair[i][1]]))
-    a = numpy.vstack((a,b))
-    
-a = a.reshape(teY.shape[0], 1, 17, 178)    
-print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(a), axis=1))
-
+#dat_e = teX_enhancer
+#a = np.dstack((teX[0], dat_e[pair[0][1]]))
+#b = np.dstack((teX[1], dat_e[pair[1][1]]))
+#a = np.vstack((a,b))
+#
+#for i in xrange(2, teX.shape[0]):
+#    b = np.dstack((teX[i], dat_e[pair[i][1]]))
+#    a = np.vstack((a,b))
+#teX_w = a.reshape(teY.shape[0], 1, 17, 178)    
+#
+#
+#np.random.shuffle(pair[:,1])
+#a = np.dstack((teX[0], dat_e[pair[0][1]]))
+#b = np.dstack((teX[1], dat_e[pair[1][1]]))
+#a = np.vstack((a,b))
+#
+#for i in xrange(2, teX.shape[0]):
+#    b = np.dstack((teX[i], dat_e[pair[i][1]]))
+#    a = np.vstack((a,b))
+#teX_s = a.reshape(teY.shape[0], 1, 17, 178)    
 
 
 
