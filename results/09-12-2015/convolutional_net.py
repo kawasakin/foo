@@ -55,7 +55,7 @@ def load_data_0(n):
         dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
 
     i = int(max(dat_Y))+1
-    for p in [min(dat_Y)-0.1] + [np.percentile(dat_Y, x*100) for x in np.arange(0, 1, 1/float(n))[1:]] + [max(dat_Y)+0.1]:
+    for p in [min(dat_Y)-0.1, 0, max(dat_Y)+0.1]:
         dat_Y[dat_Y <= p] = i
         i += 1 
     dat_Y = dat_Y - min(dat_Y) + 1
@@ -99,7 +99,26 @@ def load_data_0(n):
 #    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
 #    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
 #    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
+
     
+def load_data_2(n):
+    with open("dat_p.txt") as fin:
+        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_X = np.transpose(dat.reshape(-1, 1, 99, 17), (0, 1, 3, 2))
+
+    with open("dat_Y.txt") as fin:
+        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32")     
+
+    i = int(max(dat_Y))+1
+    for p in [min(dat_Y)-0.1, 0, max(dat_Y)+0.1]:
+        dat_Y[dat_Y <= p] = i
+        i += 1 
+    dat_Y = dat_Y - min(dat_Y) + 1
+    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+
+    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+    return [dat_X[train_index], dat_Y[train_index], dat_X[test_index], dat_Y[test_index]]
     
 def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
@@ -107,19 +126,37 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
+#############################
+with open("dat_X.txt") as fin:
+    dat_X = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+dat_X = dat_X.reshape(-1, 1, 17, 99)
+
+with open("dat_Y.txt") as fin:
+    dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+dat_Y = dat_Y - min(dat_Y) + 1
+dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+
+train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+
+trX = dat_X[train_index]
+teX = dat_X[test_index]
+trY = dat_Y[train_index]
+teY = dat_Y[test_index]
 
 num_class = 2
-trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
+#trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
+
 p_drop_conv = 0.3
 p_drop_hidden = 0.5
-mini_batch_size = 200
 
-lr = 0.0001
-epchs = 50
+mini_batch_size = 40 #[40 - 100]
+lr = 0.002 # [0.001 - 0.005]
+epchs = 200
 
 feat_num = 17
-convolution_window_width = 10
-convolution_unit_num = 50
+convolution_window_width = 15
+convolution_unit_num = 50 #50-0.827; 100-0.79 
 hidden_unit_num = 100
 
 X = T.ftensor4()
@@ -143,7 +180,8 @@ predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 for i in range(epchs):
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[start:end], trY[start:end])
-    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
+    print cost, np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+
 
 #print np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
 #print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_w), axis=1))
