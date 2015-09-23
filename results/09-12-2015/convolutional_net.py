@@ -99,6 +99,7 @@ def load_data_0(n):
 #    train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
 #    test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
 #    return [dat_X[train_index,], dat_Y[train_index,], dat_X[test_index,], dat_Y[test_index,]]
+
     
 def load_data_2(n):
     with open("dat_p.txt") as fin:
@@ -125,16 +126,33 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
+#############################
+with open("dat_X.txt") as fin:
+    dat_X = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+dat_X = dat_X.reshape(-1, 1, 17, 99)
+
+with open("dat_Y.txt") as fin:
+    dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+dat_Y = dat_Y - min(dat_Y) + 1
+dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+
+train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+
+trX = dat_X[train_index]
+teX = dat_X[test_index]
+trY = dat_Y[train_index]
+teY = dat_Y[test_index]
 
 num_class = 2
-trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
+#trX, trY, evX, evY, teX, teY, teX_enhancer, pair = load_data_0(num_class)
 
 p_drop_conv = 0.3
 p_drop_hidden = 0.5
 
-mini_batch_size = 50 #[40 - 100]
+mini_batch_size = 40 #[40 - 100]
 lr = 0.002 # [0.001 - 0.005]
-epchs = 100
+epchs = 200
 
 feat_num = 17
 convolution_window_width = 15
@@ -159,14 +177,11 @@ updates = RMSprop(cost, params, lr)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
-index = range(len(trX))
 for i in range(epchs):
-    np.random.shuffle(index)
-    trX = trX[index]
-    trY = trY[index]
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[start:end], trY[start:end])
-    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
+    print cost, np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+
 
 #print np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evX), axis=1))
 #print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_w), axis=1))
