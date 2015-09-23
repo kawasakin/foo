@@ -11,3 +11,5 @@ length(which(data[,1] <= (mixmdl$mu - 2*mixmdl$sigma)[1]))
 length(which(data[,1] >= (mixmdl$mu + 2*mixmdl$sigma)[2]))
 
 # threshold is -0.7664458 and 1.575
+
+#fit3 leanring rate
