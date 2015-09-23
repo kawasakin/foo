@@ -50,11 +50,14 @@ library(parallel)
 
 data = read.table("mESC-zy27.gene.expr.sel", head=T)
 data$FPKM = log(data$FPKM)
+data = data[order(data$FPKM),]
+data = rbind(data[1:4431,], data[(nrow(data)-6609):nrow(data),])
+data$label = c(rep(0, 4431), rep(1, 6610))
+
 upstream_region = 3000
 downstream_region = 2000
 bin_size = 50
 bin_num = (upstream_region+downstream_region)/bin_size
-#data.sel$label = cut(data.sel$FPKM, include.lowest = TRUE, quantile(data.sel$FPKM, probs = seq(0, 1, 1/num_of_exp)), labels=1:num_of_exp)
 
 # split data by the strand
 data.list = split(data, data$strand)
@@ -121,8 +124,16 @@ for(i in 1:length(feat.names)){
 	colNum =  colNum + 1
 }
 
-X = t(bins[,7:ncol(bins)])
-Y = promoters$FPKM
+bins.list = split(bins, bins$gene_id)
+bins.array <- lapply(bins.list, function(x){rapply(x[,7:ncol(x)], c)})
+res <- data.frame(do.call(rbind, bins.array))
+res$label = promoters$label
+
+write.table(res, file = "mESC_sample_features.txt", append = FALSE, 
+			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
+			dec = ".", row.names = FALSE, col.names = FALSE, 
+			qmethod = c("escape", "double"), fileEncoding = "")
+			
 
 write.table(X, file = "dat_X.txt", append = FALSE, 
 			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
@@ -133,6 +144,7 @@ write.table(Y, file = "dat_Y.txt", append = FALSE,
 			quote = FALSE, sep = "\t", eol = "\n", na = "NA", 
 			dec = ".", row.names = FALSE, col.names = FALSE, 
 			qmethod = c("escape", "double"), fileEncoding = "")
+
 
 
 #4. get features for promoters
