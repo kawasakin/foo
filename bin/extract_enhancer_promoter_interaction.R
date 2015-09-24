@@ -70,8 +70,8 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 	return(res)
 }
 
-file_gene = "mESC-zy27.gene.expr.sel"
-file_enhancer = "mESC.enhancer.txt"
+file_gene = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel"
+file_enhancer = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt"
 file_loop1 = "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/CHIC/ESC_promoter_promoter_significant_interactions.txt"
 file_loop2 = "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/CHIC/ESC_promoter_other_significant_interactions.txt"
 
@@ -96,7 +96,6 @@ feat.fnames = c(
 
 feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384",  "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
 
-
 loops1 = read.table(file_loop1, sep="\t", head=T)
 loops2 = read.table(file_loop2, sep="\t", head=T)
 
@@ -119,53 +118,86 @@ genes$index = 1:nrow(genes)
 
 enhancers = read.table(file_enhancer, head=T)
 enhancers$strand = "+"
+enhancers$start = (enhancers$start + enhancers$end)/2 - 1000
+enhancers$end = enhancers$start + 2000
 enhancers$index = 1:nrow(enhancers)
 
 ## extending genes' region 
-genes.extended = genes
-genes.extended$start = genes.extended$start - 3000
-genes.extended$end = genes.extended$end + 3000
+promoters <- get_promoter(genes, 3000, 1000)
 
-matches <- get_gene_enhancer_match(genes.extended, loops, enhancers)
+matches <- get_gene_enhancer_match(promoters, loops, enhancers)
 
 # filter enhancers not overlaped
 enhancers.sel <- enhancers[unique(matches$enhancers),]
-matches <- get_gene_enhancer_match(genes.extended, loops, enhancers.sel)
 
-promoters <- get_promoter(genes, 3000, 2000)
-bins.enhancers <- bin_regions(enhancers.sel, region_len = 4000, bin_size=50)
-bins.promoters <- bin_regions(promoters, region_len = 5000, bin_size=50)
+promoters.te <- promoters[unique(sort(matches[,1])),]
+promoters.tr <- promoters[-unique(sort(matches[,1])),]
+
+matches <- get_gene_enhancer_match(promoters.te, loops, enhancers.sel)
+
+bins.enhancers <- bin_regions(enhancers.sel, region_len = 2000, bin_size=50)
+bins.promoters.tr <- bin_regions(promoters.tr, region_len = 4000, bin_size=50)
+bins.promoters.te <- bin_regions(promoters.te, region_len = 4000, bin_size=50)
+
 
 colnames(bins.enhancers) = c("chr", "start", "end", "gene_id", "bin_id")
-colnames(bins.promoters) = c("chr", "start", "end", "gene_id", "bin_id")
-
+colnames(bins.promoters.tr) = c("chr", "start", "end", "gene_id", "bin_id")
+colnames(bins.promoters.te) = c("chr", "start", "end", "gene_id", "bin_id")
 
 a <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
-b <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
+b <- get_bin_feature(bins.promoters.tr, feat.fnames, feat.names)
+c <- get_bin_feature(bins.promoters.te, feat.fnames, feat.names)
 
 
-write.table(enhancers.sel, file = "enhancer.sel.txt", append = FALSE, quote = FALSE, sep = "\t",
+
+write.table(b, file = "trX_chip.dat", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")
 
-write.table(a, file = "dat_X_E.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(promoters.tr$label, file = "trY.dat", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")
 
-write.table(b, file = "dat_X_P.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(promoters.tr, file = "trX.bed", append = FALSE, quote = FALSE, sep = "\t",
+                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+                 col.names = FALSE, qmethod = c("escape", "double"),
+                 fileEncoding = "")
+
+
+write.table(c, file = "teX_chip.dat", append = FALSE, quote = FALSE, sep = "\t",
+                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+                 col.names = FALSE, qmethod = c("escape", "double"),
+                 fileEncoding = "")
+
+write.table(promoters.te$label, file = "teY.dat", append = FALSE, quote = FALSE, sep = "\t",
+                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+                 col.names = FALSE, qmethod = c("escape", "double"),
+                 fileEncoding = "")
+
+write.table(promoters.tr, file = "teX.bed", append = FALSE, quote = FALSE, sep = "\t",
+                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+                 col.names = FALSE, qmethod = c("escape", "double"),
+                 fileEncoding = "")
+
+
+write.table(a, file = "teX_Enhancer.txt", append = FALSE, quote = FALSE, sep = "\t",
+                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+                 col.names = FALSE, qmethod = c("escape", "double"),
+                 fileEncoding = "")
+
+write.table(enhancers.sel, file = "Enhancers.bed", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
 		         col.names = FALSE, qmethod = c("escape", "double"),
 				 fileEncoding = "")
 
-write.table(genes$label, file = "dat_Y.txt", append = FALSE, quote = FALSE, sep = "\t",
-                 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
-		         col.names = FALSE, qmethod = c("escape", "double"),
-				 fileEncoding = "")
-
-
-write.table(matches, file = "interaction.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(matches, file = "Enhancer_promoter_matches.txt", append = FALSE, quote = FALSE, sep = "\t",
 			eol = "\n", na = "NA", dec = ".", row.names = FALSE,
 			col.names = FALSE, qmethod = c("escape", "double"),
 			fileEncoding = "")
+
+
+
+
+
