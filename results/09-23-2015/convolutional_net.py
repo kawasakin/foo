@@ -80,7 +80,6 @@ def gen_target(fname, n=2):
     dat_Y = dat_Y + 1
     dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
     return dat_Y
-    
 
 num_class = 2
 p_drop_conv = 0.2
@@ -141,7 +140,7 @@ for i in range(epchs):
     random.shuffle(index)
     for start, end in zip(range(0, len(trC), mini_batch_size), range(mini_batch_size, len(trC), mini_batch_size)):
         cost = train(trC[index][start:end], trS[index][start:end], trY[index][start:end])
-    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evC, evS), axis=1))
+    print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trC, trS), axis=1)), np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evC, evS), axis=1))
 
 
 #loops = collections.defaultdict(list)
