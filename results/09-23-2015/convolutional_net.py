@@ -87,7 +87,7 @@ p_drop_hidden = 0.5
 
 mini_batch_size = 40 #[40 - 100]
 lr = 0.005 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 200
+epchs = 20
 
 feat_num = 17
 seq_motif_len = 20
