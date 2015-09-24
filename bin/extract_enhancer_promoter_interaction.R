@@ -54,7 +54,6 @@ get_gene_enhancer_match <- function(genes, loops, enhancers){
 get_bin_feature <- function(bins, feat.fnames, feat.names){
 	colNum = ncol(bins)+1
 	bins.gr <- with(bins, GRanges(chr, IRanges(start+1, end), strand="*", gene_id, bin_id))
-	
 	for(i in 1:length(feat.names)){
 		feat = read.table(feat.fnames[i])
 		colnames(feat)[1:3] = c("chr", "start", "end")
@@ -65,7 +64,10 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 		colnames(bins)[colNum] = feat.names[i]
 		colNum =  colNum + 1
 	}	
-	return(t(bins[,6:ncol(bins)]))
+	bins.list <- split(bins, bins$gene_id)
+	bins.array <- lapply(bins.list, function(x){t(x[,6:ncol(x)])})
+	res <- data.frame(do.call(rbind, bins.array))	
+	return(res)
 }
 
 file_gene = "mESC-zy27.gene.expr.sel"
@@ -105,12 +107,14 @@ loops = rbind(loops1, loops2)
 loops$index = 1:nrow(loops)
 
 genes = read.table(file_gene, head=T)
-# processing genes
 genes$FPKM = log(genes$FPKM)
-genes = genes[,c(3, 4, 5, 6, 9)]
-colnames(genes) = c("chr", "start", "end", "FPKM", "strand")
 genes = genes[order(genes$FPKM),]
-genes = genes[which(genes$FPKM<= -0.7664458 | genes$FPKM>=1.575),]
+genes = rbind(genes[1:4431,], genes[(nrow(genes)-6609):nrow(genes),])
+genes$label = c(rep(0, 4431), rep(1, 6610))
+
+genes = genes[,c(3, 4, 5, 6, 9, 10)]
+colnames(genes) = c("chr", "start", "end", "FPKM", "strand", "label")
+genes = genes[order(genes$FPKM),]
 genes$index = 1:nrow(genes)
 
 enhancers = read.table(file_enhancer, head=T)
@@ -132,28 +136,34 @@ promoters <- get_promoter(genes, 3000, 2000)
 bins.enhancers <- bin_regions(enhancers.sel, region_len = 4000, bin_size=50)
 bins.promoters <- bin_regions(promoters, region_len = 5000, bin_size=50)
 
+colnames(bins.enhancers) = c("chr", "start", "end", "gene_id", "bin_id")
+colnames(bins.promoters) = c("chr", "start", "end", "gene_id", "bin_id")
+
+
 a <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 b <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
+
 
 write.table(enhancers.sel, file = "enhancer.sel.txt", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")
 
-write.table(a, file = "dat_e.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(a, file = "dat_X_E.txt", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")
 
-write.table(b, file = "dat_p.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(b, file = "dat_X_P.txt", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
 		         col.names = FALSE, qmethod = c("escape", "double"),
 				 fileEncoding = "")
 
-write.table(promoters$FPKM, file = "dat_Y.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(genes$label, file = "dat_Y.txt", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
 		         col.names = FALSE, qmethod = c("escape", "double"),
 				 fileEncoding = "")
+
 
 write.table(matches, file = "interaction.txt", append = FALSE, quote = FALSE, sep = "\t",
 			eol = "\n", na = "NA", dec = ".", row.names = FALSE,
