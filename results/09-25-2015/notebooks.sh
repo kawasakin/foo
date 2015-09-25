@@ -10,15 +10,18 @@
 #PBS -A ren-group
 ### qsub -I -q hotel -N GeneExp -l nodes=1:ppn=1 -l walltime=100:00:00 -A ren-group 
 PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
-GENE_FILE = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel"
-ENHANCER_FILE = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt"
+GENE_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel
+ENHANCER_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt
 
 cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 # 1. extract studied genes
-/opt/R/bin/Rscript extract_genes.R 20000 20000 gene_40K_flanking.bed
+#/opt/R/bin/Rscript extract_genes.R 20000 20000 gene_40K_flanking.bed
 
 # 2. extract promoter regions
-/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
- 
+#/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
+
+# 3. extreact enhancers that overlap with flanking regions
+awk '{printf "%s\t%d\t%d\n", $1, $2+1000, $3-1000}' $ENHANCER_FILE |\
+intersectBed -u -wa -a - -b gene_40K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
 
 
