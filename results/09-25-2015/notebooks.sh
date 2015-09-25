@@ -21,8 +21,11 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 #/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
 
 # 3. extreact enhancers that overlap with flanking regions
-awk '{printf "%s\t%d\t%d\n", $1, $2+1000, $3-1000}' $ENHANCER_FILE |\
-intersectBed -u -wa -a - -b gene_40K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
+#awk '{printf "%s\t%d\t%d\n", $1, $2+1000, $3-1000}' $ENHANCER_FILE |\
+#intersectBed -u -wa -a - -b gene_40K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
 
 # 4. count how many enhancers within 40kb of selected genes
-intersectBed -c -wa -a gene_40K_flanking.bed -b enhancers.2K.bed > tmp.txt
+#intersectBed -c -wa -a gene_40K_flanking.bed -b enhancers.2K.bed > tmp.txt
+
+# 5. bin the region and extract features
+/opt/R/bin/Rscript extract_feats.R
