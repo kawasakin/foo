@@ -54,6 +54,15 @@ def model(X1, X2, w1a, w1b, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidde
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
+def model1(X1, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
+    # X1 is matrix for ChIP-seq features
+    # X2 is matrix for sequence features
+    # Max_Pooling_Shape has to be large enough to pool only one element out
+    l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X1, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
+    l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
+    pyx = softmax(T.dot(l2, w3))
+    return pyx
+    
 def gen_seq_feature(fname, region_len=4000):
     dat_seq = []
     with open(fname) as fin:
@@ -119,21 +128,28 @@ evY = dat_Y[eval_index]
 C = T.ftensor4()
 S = T.ftensor4()
 Y = T.fmatrix()
-
+chip_motif_num = 0
 w1C = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
 w1S = init_weights((seq_motif_num, 1, 4, seq_motif_len))
 w2 = init_weights((seq_motif_num + chip_motif_num, hidden_unit_num))
 w3 = init_weights((hidden_unit_num, num_class))
 
-noise_py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
-py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, 0., 0.)
+noise_py_x = model1(S, w1S, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
+py_x = model1(S, w1S, w2, w3, max_pool_shape, 0., 0.)
+
+#noise_py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
+#py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, 0., 0.)
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 
-params = [w1C, w1S, w2, w3]
+#params = [w1C, w1S, w2, w3]
+params = [w1S, w2, w3]
 updates = RMSprop(cost, params, lr)
 
-train = theano.function(inputs=[C, S, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-predict = theano.function(inputs=[C, S], outputs=py_x, allow_input_downcast=True)
+#train = theano.function(inputs=[C, S, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+#predict = theano.function(inputs=[C, S], outputs=py_x, allow_input_downcast=True)
+
+train = theano.function(inputs=[S, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+predict = theano.function(inputs=[S], outputs=py_x, allow_input_downcast=True)
 
 index = np.r_[:trC.shape[0]]
 for i in range(epchs):
@@ -143,11 +159,21 @@ for i in range(epchs):
         print cost
     print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evC, evS), axis=1))
 
+
+index = np.r_[:trS.shape[0]]
+for i in range(epchs):
+    random.shuffle(index)
+    for start, end in zip(range(0, len(trS), mini_batch_size), range(mini_batch_size, len(trS), mini_batch_size)):
+        cost = train(trS[index][start:end], trY[index][start:end])
+    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evS), axis=1))
+
+
 # test on the test set 
-teX_S = gen_seq_feature("teX.fa", 4000)
-teX_C = gen_chip_feature("teX_chip.dat")
-teY = gen_target("teY.dat", 2)
-print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_C, teX_S), axis=1))
+#teX_S = gen_seq_feature("teX.fa", 4000)
+#teX_C = gen_chip_feature("teX_chip.dat")
+#teY = gen_target("teY.dat", 2)
+#print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_C, teX_S), axis=1))
+print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_S), axis=1))
 
 pred = predict(teX_C, teX_S)
 res = np.array((np.argmax(teY, axis=1), pred[:,1])).T
@@ -167,11 +193,9 @@ res1 = []
 res2 = []
 for i in loops:
     S = teX_S[i]
-    C = teX_C[i]    
     for j in loops[i]:
         S = np.dstack((S, teE_S[j]))
-        C = np.dstack((C, teE_C[j]))
-    res1.append(np.argmax(predict(C.reshape(1, 1, 17, -1), S.reshape(1, 1, 4, -1))))
+    res1.append(np.argmax(predict(S.reshape(1, 1, 4, -1))))
     res2.append(np.argmax(teY[i]))
 np.mean(np.array(res1)==np.array(res2))
         
@@ -190,78 +214,6 @@ for i in loops_shuffled:
     for j in loops_shuffled[i]:
         S = np.dstack((S, teE_S[j]))
         C = np.dstack((C, teE_C[j]))
-    res1.append(np.argmax(predict(C.reshape(1, 1, 17, -1), S.reshape(1, 1, 4, -1))))
+    res1.append(np.argmax(predict(S.reshape(1, 1, 4, -1))))
     res2.append(np.argmax(teY[i]))
 np.mean(np.array(res1)==np.array(res2))
-
-# 0.87874360847333821
-
-#train_index = list(set(xrange(dat_X.shape[0])) - set(loops.keys()))
-#test_index = sorted(loops.keys())
-
-#train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
-#test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
-
-
-
-
-
-
-#print np.mean(np.argmax(dat_Y[test_index], axis=1) == np.argmax(predict(dat_X[test_index]), axis=1))
-#pearsonr(range(len(test_index)), predict(dat_X[test_index])[:,1])
-#
-#a = predict(dat_X[test_index])
-#np.savetxt("tmp", a, delimiter="t")
-#
-#sumCorrect = 0
-#for i in test_index:
-#    X = dat_X[i]
-#    Y = dat_Y[i]
-#    for j in loops[i]:
-#        X = np.dstack((X, dat_E_X[j]))
-#    sumCorrect = sumCorrect + [0,1][np.argmax(Y, axis=0) == np.argmax(predict(X.reshape(1, 1, 17, -1))[0], axis=0)]
-#
-#keys =  list(loops.keys())        
-#random.shuffle(keys)
-#loops_shuffled = dict([(key, loops[key]) for key in keys])
-#sumCorrect = 0
-#for i in test_index:
-#    X = dat_X[i]
-#    Y = dat_Y[i]
-#    for j in loops_shuffled[i]:
-#        X = np.dstack((X, dat_E_X[j]))
-#    sumCorrect = sumCorrect + [0,1][np.argmax(Y, axis=0) == np.argmax(predict(X.reshape(1, 1, 17, -1))[0], axis=0)]
-#
-#
-#
-#a = [ list(gene_mapper[:,1]).index(x) if x in gene_mapper[:,1] else None for x in loops[:,0] ]
-#teX_tmp = teX[a]
-#teY_tmp = teY[a]
-#pair = loops[:,1]
-## with enhancer
-#a = np.dstack((teX_tmp[0], dat_E_X[pair[0]]))
-#b = np.dstack((teX_tmp[1], dat_E_X[pair[1]]))
-#a = np.vstack((a,b))
-##
-#for i in xrange(2, teX_tmp.shape[0]):
-#    b = np.dstack((teX_tmp[i], dat_E_X[pair[i]]))
-#    a = np.vstack((a,b))
-#
-#teX_tmp = a.reshape(teY_tmp.shape[0], 1, 17, 178)    
-#print np.mean(np.argmax(teY_tmp, axis=1) == np.argmax(predict(teX_tmp), axis=1))
-#
-#
-#
-#np.random.shuffle(pair[:,1])
-#a = np.dstack((teX[0], dat_e[pair[0][1]]))
-#b = np.dstack((teX[1], dat_e[pair[1][1]]))
-#a = np.vstack((a,b))
-#
-#for i in xrange(2, teX.shape[0]):
-#    b = np.dstack((teX[i], dat_e[pair[i][1]]))
-#    a = np.vstack((a,b))
-#teX_s = a.reshape(teY.shape[0], 1, 17, 178)    
-
-
-
-    
