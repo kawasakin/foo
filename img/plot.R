@@ -15,11 +15,12 @@ length(which(data[,1] >= (mixmdl$mu + 2*mixmdl$sigma)[2]))
 #fit3 leanring rate
 
 #fig3
-data = t(read.table("tmp.txt"))
-data = data.frame(data[order(data[,2]),])
-data$label = 2
-data$label[1:367] = 1
+data = t(read.table("../results/09-23-2015/teY_prob.txt"))
+data = data.frame(t(data))
+#data = data.frame(data[order(data[,2]),])
+data$V1[which(data$V1==1)] = 2
+data$V1[which(data$V1==0)] = 1
 data$X2 = 1:nrow(data)
-color_transparent <- adjustcolor(data$label, alpha.f = 0.3) 
-plot(data$X2, data$X1, col=color_transparent, pch=19, xlab="", xaxt='n', ann=FALSE)
+color_transparent <- adjustcolor(data$V1, alpha.f = 0.3) 
+plot(data$X2, data$V2, col=color_transparent, pch=19, xlab="", xaxt='n', ann=FALSE)
 
