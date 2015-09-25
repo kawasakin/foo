@@ -176,7 +176,7 @@ write.table(promoters.te$label, file = "teY.dat", append = FALSE, quote = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")
 
-write.table(promoters.tr, file = "teX.bed", append = FALSE, quote = FALSE, sep = "\t",
+write.table(promoters.te, file = "teX.bed", append = FALSE, quote = FALSE, sep = "\t",
                  eol = "\n", na = "NA", dec = ".", row.names = FALSE,
                  col.names = FALSE, qmethod = c("escape", "double"),
                  fileEncoding = "")

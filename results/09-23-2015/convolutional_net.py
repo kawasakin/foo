@@ -82,18 +82,18 @@ def gen_target(fname, n=2):
     return dat_Y
 
 num_class = 2
-p_drop_conv = 0.2
+p_drop_conv = 0.3
 p_drop_hidden = 0.5
 
-mini_batch_size = 40 #[40 - 100]
-lr = 0.005 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
+mini_batch_size = 50 #[40 - 100]
+lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
 epchs = 20
 
 feat_num = 17
 seq_motif_len = 20
 chip_motif_len = 15
 seq_motif_num = 40
-chip_motif_num = 30
+chip_motif_num = 50
 hidden_unit_num = 100
 
 
@@ -142,6 +142,14 @@ for i in range(epchs):
         cost = train(trC[index][start:end], trS[index][start:end], trY[index][start:end])
     print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trC, trS), axis=1)), np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evC, evS), axis=1))
 
+# test on the test set 
+teX_S = gen_seq_feature("teX.fa")
+teX_C = gen_chip_feature("teX_chip.dat")
+teY = gen_target("teY.dat", 2)
+print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_C, teX_S), axis=1))
+pred = predict(teX_C, teX_S)
+res = np.array((np.argmax(teY, axis=1), pred[:,1])).T
+np.savetxt("teY_prob.txt", res)
 
 #loops = collections.defaultdict(list)
 #with open("interaction.txt") as fin:

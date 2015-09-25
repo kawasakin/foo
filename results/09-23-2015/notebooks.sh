@@ -27,4 +27,4 @@ PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
 # fastaFromBed -fi /oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/Sequence/WholeGenomeFasta/genome.fa -bed teX.bed -fo teX.fa
 
 cd /oasis/tscc/scratch/r3fang/github/foo/results/09-23-2015
-$PYTHON convolutional_net.py > conv_net_eval.txt
+$PYTHON convolutional_net.py > lr_0.0001.txt
