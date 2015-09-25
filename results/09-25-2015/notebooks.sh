@@ -15,7 +15,10 @@ ENHANCER_FILE = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.e
 
 cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 # 1. extract studied genes
-/opt/R/bin/Rscript extract_genes.R 2000 2000 gene_4K_extracted.bed
+/opt/R/bin/Rscript extract_genes.R 20000 20000 gene_40K_flanking.bed
 
+# 2. extract promoter regions
+/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
+ 
 
 
