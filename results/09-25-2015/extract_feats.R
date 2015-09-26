@@ -89,15 +89,16 @@ feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384", 
 bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
 
+max_enhancer=4
 total_col = 39*max_enhancer+59
 matches.list <- split(matches, matches[,1])
 
 res.list <- mclapply(matches.list, function(tmp){
 	p = bin.promoters.feat[[tmp[1,1]]]
-	for(j in tmp[,2]){
+	for(j in tmp[1:min(max_enhancer+1, nrow(tmp)),2]){
 		if(j!=0){
 			e = bin.enhancers.feat[[j]]
-			p = cbind(p, e)			
+			p = cbind(p, e)		
 		}
 	}
 	mm <- data.frame(matrix(0, nrow(p), total_col-ncol(p)))
