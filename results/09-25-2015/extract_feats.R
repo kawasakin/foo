@@ -17,24 +17,6 @@ bin_regions <- function(regions, region_len = 5000, bin_size=50){
 	colnames(res) = c("chr", "start", "end", "gene_id", "bin_id")
 	return(res)
 }
-get_bin_feature <- function(bins, feat.fnames, feat.names){
-	colNum = ncol(bins)+1
-	bins.gr <- with(bins, GRanges(chr, IRanges(start+1, end), strand="*", gene_id, bin_id))
-	for(i in 1:length(feat.names)){
-		feat = read.table(feat.fnames[i])
-		colnames(feat)[1:3] = c("chr", "start", "end")
-		feat.gr <- with(feat, GRanges(chr, IRanges(start+1, end), strand="*"))
-		ov <- findOverlaps(bins.gr, feat.gr)
-		bins[,colNum] = 0
-		bins[unique(ov@queryHits), colNum] = 1
-		colnames(bins)[colNum] = feat.names[i]
-		colNum =  colNum + 1
-	}	
-	bins.list <- split(bins, bins$gene_id)
-	bins.array <- lapply(bins.list, function(x){t(x[,6:ncol(x)])})
-	res <- data.frame(do.call(rbind, bins.array))	
-	return(res)
-}
 
 get_bin_feature <- function(bins, feat.fnames, feat.names){
 	colNum = ncol(bins)+1
@@ -51,8 +33,7 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 	}	
 	bins.list <- split(bins, bins$gene_id)
 	bins.array <- lapply(bins.list, function(x){t(x[,6:ncol(x)])})
-	res <- data.frame(do.call(rbind, bins.array))	
-	return(res)
+	return(bins.array)
 }
 
 file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_promoter.bed"
@@ -72,14 +53,17 @@ flankings.gr <- with(flankings, GRanges(chr, IRanges(start, end), strand="*"))
 enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start, end), strand="*"))
 
 ov <- findOverlaps(flankings.gr, enhancers.gr)
-matches <- data.frame(promoter=ov@queryHits-1, enhancer=ov@subjectHits-1)
+matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
 
-write.table(matches, file = "matches.txt", append = FALSE, quote = FALSE, sep = "\t",
-eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-fileEncoding = "")
+max_enhancer = max(table(matches[,1]))
+matches = rbind(data.frame(promoter=1:nrow(promoters), enhancer=0), matches)
+matches = matches[order(matches[,1]),]
+#write.table(matches, file = "matches.txt", append = FALSE, quote = FALSE, sep = "\t",
+#eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+#fileEncoding = "")
 
-bins.enhancers <- bin_regions(enhancers, region_len = 2000, bin_size=50)
 bins.promoters <- bin_regions(promoters, region_len = 3000, bin_size=50)
+bins.enhancers <- bin_regions(enhancers, region_len = 2000, bin_size=50)
 
 feat.fnames = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/E14_CHD2.bed",
@@ -105,11 +89,27 @@ feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384", 
 bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
 
-write.table(bin.enhancers.feat, file = "datX_E.dat", append = FALSE, quote = FALSE, sep = "\t",
-eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-fileEncoding = "")
+total_col = 39*max_enhancer+59
+matches.list <- split(matches, matches[,1])
 
-write.table(bin.promoters.feat, file = "datX_P.dat", append = FALSE, quote = FALSE, sep = "\t",
+res.list <- mclapply(matches.list, function(tmp){
+	p = bin.promoters.feat[[tmp[1,1]]]
+	for(j in tmp[,2]){
+		if(j!=0){
+			e = bin.enhancers.feat[[j]]
+			p = cbind(p, e)			
+		}
+	}
+	mm <- data.frame(matrix(0, nrow(p), total_col-ncol(p)))
+	p = cbind(p, mm)
+	colnames(p) = paste("X", 1:total_col, sep="")
+	return(p)
+}, mc.cores=10)
+
+res = do.call(rbind, res.list)
+
+
+write.table(res, file = "datX.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
 fileEncoding = "")
 

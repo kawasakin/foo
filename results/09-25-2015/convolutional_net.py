@@ -31,6 +31,28 @@ def dropout(X, p=0.):
         X /= retain_prob
     return X
 
+def gen_chip_feature(fname, region_len=50):
+    with open(fname) as fin:
+        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_X = dat.reshape(-1, 1, 17, region_len)
+    return dat_X
+
+def gen_matches(fname):
+    matches = collections.defaultdict(list)
+    with open(fname) as fin:
+        for line in fin:
+            [p, e] = map(int, line.strip().split())
+            matches[p].append(e)
+    return matches
+
+            
+def gen_target(fname, n=2):
+    with open(fname) as fin:
+        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_Y = dat_Y + 1
+    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+    return dat_Y
+
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
     updates = []
@@ -43,29 +65,12 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((p, p - lr * g))
     return updates
 
-#def model(X1, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
-#    # X1 is matrix for ChIP-seq features
-#    # X2 is matrix for sequence features
-#    # Max_Pooling_Shape has to be large enough to pool only one element out
-#    l1a = T.flatten(dropout(max_pool_2d(rectify(conv2d(X1, w1a, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
-#    l1b = T.flatten(dropout(max_pool_2d(rectify(conv2d(X2, w1b, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
-#    l1 = T.concatenate([l1a,l1b], axis=1)
-#    l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
-#    pyx = softmax(T.dot(l2, w3))
-#    return pyx
-
-def gen_chip_feature(fname, region_len=50):
-    with open(fname) as fin:
-        dat = np.loadtxt(StringIO(fin.read()), dtype="float32") 
-    dat_X = dat.reshape(-1, 1, 17, region_len)
-    return dat_X
-    
-def gen_target(fname, n=2):
-    with open(fname) as fin:
-        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
-    dat_Y = dat_Y + 1
-    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
-    return dat_Y
+def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
+    # Max_Pooling_Shape has to be large enough to pool only one element out
+    l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
+    l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
+    pyx = softmax(T.dot(l2, w3))
+    return pyx
 
 num_class = 2
 p_drop_conv = 0.3
@@ -84,44 +89,49 @@ max_pool_shape = (1, 500000000)
 
 dat_X = gen_chip_feature("datX_P.dat", 59)
 dat_Y = gen_target("datY.dat", 2)
+matches = gen_matches("matches.txt")
+
+# Enhancers
+dat_X_E = gen_chip_feature("datX_E.dat", 39)
 
 # seperate training and testing data
 train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
 test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
-trX = dat_X[train_index]
-teX = dat_X[test_index]
-trY = dat_Y[train_index]
-teY = dat_Y[test_index]
 
-
-# random chose 870 as evaluation set
-train_index = np.array(range(dat_Y.shape[0]))
-random.shuffle(train_index)
-eval_index = train_index[:870]
-train_index = train_index[870:]
-trC = dat_C[train_index]
-trS = dat_S[train_index]
-trY = dat_Y[train_index]
-evS = dat_S[eval_index]
-evC = dat_C[eval_index]
-evY = dat_Y[eval_index]
-
-
-C = T.ftensor4()
-S = T.ftensor4()
+# symbolic variables
+X = T.ftensor4()
 Y = T.fmatrix()
+Z = T.fmatrix()
 
-w1C = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-w1S = init_weights((seq_motif_num, 1, 4, seq_motif_len))
-w2 = init_weights((seq_motif_num + chip_motif_num, hidden_unit_num))
+w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
+w2 = init_weights((chip_motif_num, hidden_unit_num))
 w3 = init_weights((hidden_unit_num, num_class))
 
-noise_py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
-py_x = model(C, S, w1C, w1S, w2, w3, max_pool_shape, 0., 0.)
-cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 
-params = [w1C, w1S, w2, w3]
+noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
+py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
+
+cost = T.mean(T.nnet.categorical_crossentropy(Z, Y))
+params = [w1, w2, w3]
 updates = RMSprop(cost, params, lr)
+
+train = theano.function(inputs=[Z, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
+
+# = theano.function(inputs=[X], outputs=, allow_input_downcast=True)
+
+cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
+params = [w1, w2, w3]
+updates = RMSprop(cost, params, lr)
+
+for i in train_index[:100]:
+    promoter = dat_X[i]
+    for j in matches[i]:
+        enhancer = dat_X_E[j]
+        promoter = np.dstack((promoter, enhancer))
+    X_tmp = promoter.reshape(1, 1, 17, -1)
+    print noise_py_x(X_tmp)
+    
 
 train = theano.function(inputs=[C, S, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[C, S], outputs=py_x, allow_input_downcast=True)
