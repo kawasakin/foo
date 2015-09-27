@@ -89,7 +89,7 @@ feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384", 
 bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
 
-max_enhancer=4
+max_enhancer=3
 total_col = 39*max_enhancer+59
 matches.list <- split(matches, matches[,1])
 
