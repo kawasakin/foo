@@ -43,6 +43,7 @@ file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancer
 promoters = read.table(file_promoter)
 flankings = read.table(file_flanking)
 enhancers = read.table(file_enhancer)
+
 colnames(promoters) = c("chr", "start", "end", "FPRM", "strand", "group")
 colnames(flankings) = c("chr", "start", "end", "FPRM", "strand", "group")
 colnames(enhancers) = c("chr", "start", "end")
@@ -55,12 +56,10 @@ enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start, end), strand="*"))
 ov <- findOverlaps(flankings.gr, enhancers.gr)
 matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
 
-max_enhancer = max(table(matches[,1]))
-matches = rbind(data.frame(promoter=1:nrow(promoters), enhancer=0), matches)
 matches = matches[order(matches[,1]),]
-#write.table(matches, file = "matches.txt", append = FALSE, quote = FALSE, sep = "\t",
-#eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-#fileEncoding = "")
+write.table(matches-1, file = "matches.txt", append = FALSE, quote = FALSE, sep = "\t",
+eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+fileEncoding = "")
 
 bins.promoters <- bin_regions(promoters, region_len = 3000, bin_size=50)
 bins.enhancers <- bin_regions(enhancers, region_len = 2000, bin_size=50)
@@ -89,28 +88,14 @@ feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384", 
 bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
 
-max_enhancer=4
-total_col = 39*max_enhancer+59
-matches.list <- split(matches, matches[,1])
+res.enhancers = do.call(rbind, bin.enhancers.feat)
+res.promoters = do.call(rbind, bin.promoters.feat)
 
-res.list <- mclapply(matches.list, function(tmp){
-	p = bin.promoters.feat[[tmp[1,1]]]
-	for(j in tmp[1:min(max_enhancer+1, nrow(tmp)),2]){
-		if(j!=0){
-			e = bin.enhancers.feat[[j]]
-			p = cbind(p, e)		
-		}
-	}
-	mm <- data.frame(matrix(0, nrow(p), total_col-ncol(p)))
-	p = cbind(p, mm)
-	colnames(p) = paste("X", 1:total_col, sep="")
-	return(p)
-}, mc.cores=10)
+write.table(res.promoters, file = "datX_P.dat", append = FALSE, quote = FALSE, sep = "\t",
+eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+fileEncoding = "")
 
-res = do.call(rbind, res.list)
-
-
-write.table(res, file = "datX.dat", append = FALSE, quote = FALSE, sep = "\t",
+write.table(res.enhancers, file = "datX_E.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
 fileEncoding = "")
 
