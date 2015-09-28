@@ -45,7 +45,6 @@ def gen_matches(fname):
             matches[p].append(e)
     return matches
 
-            
 def gen_target(fname, n=2):
     with open(fname) as fin:
         dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
@@ -64,7 +63,7 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((acc, acc_new))
         updates.append((p, p - lr * g))
     return updates
-
+    
 def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     # Max_Pooling_Shape has to be large enough to pool only one element out
     l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
@@ -76,9 +75,9 @@ num_class = 2
 p_drop_conv = 0.3
 p_drop_hidden = 0.5
 
-mini_batch_size = 400 #[40 - 100]
+mini_batch_size = 40 #[40 - 100]
 lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 20
+epchs = 50
 
 feat_num = 17
 chip_motif_len = 10
@@ -87,16 +86,37 @@ hidden_unit_num = 100
 
 max_pool_shape = (1, 500000000)
 
-dat_X = gen_chip_feature("datX_P.dat", 59)
-dat_Y = gen_target("datY.dat", 2)
+dat_X_P = gen_chip_feature("datX_P.dat", 59)    # promoter 3k
+dat_X_E = gen_chip_feature("datX_E.dat", 39)    # enhancer 2k
+dat_Y = gen_target("datY.dat", 2)               # target 
 matches = gen_matches("matches.txt")
 
-# Enhancers
-dat_X_E = gen_chip_feature("datX_E.dat", 39)
+# model 0
+max_enhancer_num = max(map(len, matches.values()))
+max_col = max_enhancer_num*39 + 59
+dat_X = np.empty([1, 1, 17, max_col])
+for i in xrange(len(dat_X_P)):
+    p = dat_X_P[i]    
+    if i in matches:
+        e1 = np.dstack(dat_X_E[matches[i]])
+        e2 = np.zeros((17*(max_col-e1.shape[2]-59))).reshape(1, 17, -1)  
+        e = np.dstack((e1, e2))
+        p = np.dstack((p, e))
+    else: # no nehancers
+        e = np.zeros((17*(max_col-59))).reshape(1, 17, -1)  
+        p = np.dstack((p, e)) 
+    dat_X = np.vstack((dat_X, p.reshape(1, 1, 17, -1)))   
+dat_X = dat_X[1:]
 
 # seperate training and testing data
-train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
-test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+train_index = np.array(range(len(dat_X)))
+#train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
+#test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
+
+trX = dat_X[train_index]
+trY = dat_Y[train_index]
+#teX = dat_X[test_index]
+#teY = dat_Y[test_index]
 
 # symbolic variables
 X = T.ftensor4()
@@ -107,162 +127,25 @@ w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
 w2 = init_weights((chip_motif_num, hidden_unit_num))
 w3 = init_weights((hidden_unit_num, num_class))
 
-
 noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
 py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
-
-cost = T.mean(T.nnet.categorical_crossentropy(Z, Y))
-params = [w1, w2, w3]
-updates = RMSprop(cost, params, lr)
-
-train = theano.function(inputs=[Z, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
-
-# = theano.function(inputs=[X], outputs=, allow_input_downcast=True)
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 params = [w1, w2, w3]
 updates = RMSprop(cost, params, lr)
 
-for i in train_index[:100]:
-    promoter = dat_X[i]
-    for j in matches[i]:
-        enhancer = dat_X_E[j]
-        promoter = np.dstack((promoter, enhancer))
-    X_tmp = promoter.reshape(1, 1, 17, -1)
-    print noise_py_x(X_tmp)
-    
+train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
-train = theano.function(inputs=[C, S, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-predict = theano.function(inputs=[C, S], outputs=py_x, allow_input_downcast=True)
-
-index = np.r_[:trC.shape[0]]
+index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
-    for start, end in zip(range(0, len(trC), mini_batch_size), range(mini_batch_size, len(trC), mini_batch_size)):
-        cost = train(trC[index][start:end], trS[index][start:end], trY[index][start:end])
-        print cost
-    print cost, np.mean(np.argmax(evY, axis=1) == np.argmax(predict(evC, evS), axis=1))
-
-# test on the test set 
-teX_S = gen_seq_feature("teX.fa", 4000)
-teX_C = gen_chip_feature("teX_chip.dat")
-teY = gen_target("teY.dat", 2)
-print np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX_C, teX_S), axis=1))
-
-pred = predict(teX_C, teX_S)
-res = np.array((np.argmax(teY, axis=1), pred[:,1])).T
-np.savetxt("teY_prob.txt", res)
-
-loops = collections.defaultdict(list)
-with open("Enhancer_promoter_matches.txt") as fin:
-    for line in fin:
-        [p, e] = line.strip().split()
-        loops[int(p)-1].append(int(e)-1)
-
-# adding enhancers
-teE_S = gen_seq_feature("Enhancers.fa", 2000)
-teE_C = gen_chip_feature("teX_Enhancer.txt", 39)
-
-res1 = []
-res2 = []
-for i in loops:
-    S = teX_S[i]
-    C = teX_C[i]    
-    for j in loops[i]:
-        S = np.dstack((S, teE_S[j]))
-        C = np.dstack((C, teE_C[j]))
-    res1.append(np.argmax(predict(C.reshape(1, 1, 17, -1), S.reshape(1, 1, 4, -1))))
-    res2.append(np.argmax(teY[i]))
-np.mean(np.array(res1)==np.array(res2))
-        
-
-# shuffle enhancers 
-keys = loops.keys()
-keys_shuffle = sorted(keys, key=lambda k: random.random())
-a = dict(zip(keys, keys_shuffle))
-loops_shuffled = dict([(key, loops[a[key]])for key in keys])
-
-res1 = []
-res2 = []
-for i in loops_shuffled:
-    S = teX_S[i]
-    C = teX_C[i]    
-    for j in loops_shuffled[i]:
-        S = np.dstack((S, teE_S[j]))
-        C = np.dstack((C, teE_C[j]))
-    res1.append(np.argmax(predict(C.reshape(1, 1, 17, -1), S.reshape(1, 1, 4, -1))))
-    res2.append(np.argmax(teY[i]))
-np.mean(np.array(res1)==np.array(res2))
-
-# 0.87874360847333821
-
-#train_index = list(set(xrange(dat_X.shape[0])) - set(loops.keys()))
-#test_index = sorted(loops.keys())
-
-#train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
-#test_index  = sorted(list(set(range(dat_X.shape[0]))-set(train_index)))
-
-
-
-
-
-
-#print np.mean(np.argmax(dat_Y[test_index], axis=1) == np.argmax(predict(dat_X[test_index]), axis=1))
-#pearsonr(range(len(test_index)), predict(dat_X[test_index])[:,1])
-#
-#a = predict(dat_X[test_index])
-#np.savetxt("tmp", a, delimiter="t")
-#
-#sumCorrect = 0
-#for i in test_index:
-#    X = dat_X[i]
-#    Y = dat_Y[i]
-#    for j in loops[i]:
-#        X = np.dstack((X, dat_E_X[j]))
-#    sumCorrect = sumCorrect + [0,1][np.argmax(Y, axis=0) == np.argmax(predict(X.reshape(1, 1, 17, -1))[0], axis=0)]
-#
-#keys =  list(loops.keys())        
-#random.shuffle(keys)
-#loops_shuffled = dict([(key, loops[key]) for key in keys])
-#sumCorrect = 0
-#for i in test_index:
-#    X = dat_X[i]
-#    Y = dat_Y[i]
-#    for j in loops_shuffled[i]:
-#        X = np.dstack((X, dat_E_X[j]))
-#    sumCorrect = sumCorrect + [0,1][np.argmax(Y, axis=0) == np.argmax(predict(X.reshape(1, 1, 17, -1))[0], axis=0)]
-#
-#
-#
-#a = [ list(gene_mapper[:,1]).index(x) if x in gene_mapper[:,1] else None for x in loops[:,0] ]
-#teX_tmp = teX[a]
-#teY_tmp = teY[a]
-#pair = loops[:,1]
-## with enhancer
-#a = np.dstack((teX_tmp[0], dat_E_X[pair[0]]))
-#b = np.dstack((teX_tmp[1], dat_E_X[pair[1]]))
-#a = np.vstack((a,b))
-##
-#for i in xrange(2, teX_tmp.shape[0]):
-#    b = np.dstack((teX_tmp[i], dat_E_X[pair[i]]))
-#    a = np.vstack((a,b))
-#
-#teX_tmp = a.reshape(teY_tmp.shape[0], 1, 17, 178)    
-#print np.mean(np.argmax(teY_tmp, axis=1) == np.argmax(predict(teX_tmp), axis=1))
-#
-#
-#
-#np.random.shuffle(pair[:,1])
-#a = np.dstack((teX[0], dat_e[pair[0][1]]))
-#b = np.dstack((teX[1], dat_e[pair[1][1]]))
-#a = np.vstack((a,b))
-#
-#for i in xrange(2, teX.shape[0]):
-#    b = np.dstack((teX[i], dat_e[pair[i][1]]))
-#    a = np.vstack((a,b))
-#teX_s = a.reshape(teY.shape[0], 1, 17, 178)    
-
-
-
+    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
+        cost = train(trX[index][start:end], trY[index][start:end])
+    print train(trX[index], trY[index]), np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
     
+#print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
+print np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
+categorical_crossentropy = theano.function(inputs=[Y, Z], outputs=T.mean(T.nnet.categorical_crossentropy(Y, Z)), allow_input_downcast=True)
+categorical_crossentropy(predict(trX), trY)
+
