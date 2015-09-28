@@ -8,6 +8,7 @@ from theano.tensor.signal.downsample import max_pool_2d
 import random 
 from scipy.stats.stats import pearsonr
 import collections 
+from itertools import chain, combinations
 
 srng = RandomStreams()
 
@@ -140,6 +141,8 @@ predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 categorical_crossentropy = theano.function(inputs=[Y, Z], outputs=T.mean(T.nnet.categorical_crossentropy(Y, Z)), allow_input_downcast=True)
 #categorical_crossentropy(predict(trX), trY)
 
+
+
 index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
@@ -147,8 +150,37 @@ for i in range(epchs):
         cost = train(trX[index][start:end], trY[index][start:end])
     print categorical_crossentropy(predict(trX), trY), categorical_crossentropy(predict(teX), teY), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
 
+def all_subsets(ss):
+    return chain(*map(lambda x: combinations(ss, x), range(0, len(ss)+1)))
 
+max_enhancer_num = max(map(len, matches.values()))
+max_col = max_enhancer_num*39 + 59
+dat_X = np.empty([1, 1, 17, max_col])
+for i in xrange(len(dat_X_P)):
+    p = dat_X_P[i]
+    if i in matches:
+        dat_X_tmp = []
+        for subset in all_subsets(matches[i]): 
+            p = dat_X_P[i]
+            for j in subset:
+                e1 = dat_X_E[j]
+                p = np.dstack((p, e1)) 
+            e2 = np.zeros((17*(39*(max_enhancer_num-len(subset))))).reshape(1, 17, -1)  
+            p = np.dstack((p, e2))
+            dat_X_tmp.append(p)
+        costs = [categorical_crossentropy(predict(p.reshape(1, 1, 17, -1)), trY[i].reshape(1, 2)) for p in dat_X_tmp]
+        dat_X = np.vstack((dat_X, dat_X_tmp[costs.index(min(costs))].reshape(1, 1, 17, -1)))               
+    else:
+        e = np.zeros((17*(max_col-59))).reshape(1, 17, -1)  
+        p = np.dstack((p, e)) 
+        dat_X = np.vstack((dat_X, p.reshape(1, 1, 17, -1)))   
+dat_X = dat_X[1:]
 
+#w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
+#w2 = init_weights((chip_motif_num, hidden_unit_num))
+#w3 = init_weights((hidden_unit_num, num_class))
+
+trX = dat_X
 index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
