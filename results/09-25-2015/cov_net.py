@@ -137,15 +137,25 @@ updates = RMSprop(cost, params, lr)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
+categorical_crossentropy = theano.function(inputs=[Y, Z], outputs=T.mean(T.nnet.categorical_crossentropy(Y, Z)), allow_input_downcast=True)
+#categorical_crossentropy(predict(trX), trY)
+
 index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
-    print train(trX[index], trY[index]), np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
+    print categorical_crossentropy(predict(trX), trY), categorical_crossentropy(predict(teX), teY), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+
+
+
+index = np.array(xrange(trX.shape[0]))
+for i in range(epchs):
+    random.shuffle(index)
+    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
+        cost = train(trX[index][start:end], trY[index][start:end])
+    print categorical_crossentropy(predict(trX[index]), trY[index])
     
 #print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
 print np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
-categorical_crossentropy = theano.function(inputs=[Y, Z], outputs=T.mean(T.nnet.categorical_crossentropy(Y, Z)), allow_input_downcast=True)
-categorical_crossentropy(predict(trX), trY)
 

@@ -88,8 +88,30 @@ feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384", 
 bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
 
+<<<<<<< HEAD
 res.enhancers = do.call(rbind, bin.enhancers.feat)
 res.promoters = do.call(rbind, bin.promoters.feat)
+=======
+max_enhancer=3
+total_col = 39*max_enhancer+59
+matches.list <- split(matches, matches[,1])
+
+res.list <- mclapply(matches.list, function(tmp){
+	p = bin.promoters.feat[[tmp[1,1]]]
+	for(j in tmp[1:min(max_enhancer+1, nrow(tmp)),2]){
+		if(j!=0){
+			e = bin.enhancers.feat[[j]]
+			p = cbind(p, e)		
+		}
+	}
+	mm <- data.frame(matrix(0, nrow(p), total_col-ncol(p)))
+	p = cbind(p, mm)
+	colnames(p) = paste("X", 1:total_col, sep="")
+	return(p)
+}, mc.cores=10)
+
+res = do.call(rbind, res.list)
+>>>>>>> ec56d3d8c0c26d446aca7420dda80f679d90bc24
 
 write.table(res.promoters, file = "datX_P.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
