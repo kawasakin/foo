@@ -191,3 +191,5 @@ for i in range(epchs):
 #print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
 print np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
 
+a = predict(trX)
+pearsonr(a[:,1], np.array(range(len(trY))))
