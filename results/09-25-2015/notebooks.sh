@@ -8,12 +8,8 @@
 #PBS -M r3fang@ucsd.edu
 #PBS -m ae
 #PBS -A ren-group
-<<<<<<< HEAD
-### qsub -I -q hotel -N cov_net -l nodes=1:ppn=1 -l walltime=100:00:00 -A ren-group 
 
-=======
 ### qsub -I -q hotel -N ConvNet -l nodes=1:ppn=1 -l walltime=100:00:00 -A ren-group 
->>>>>>> ec56d3d8c0c26d446aca7420dda80f679d90bc24
 PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
 GENE_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel
 ENHANCER_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt
