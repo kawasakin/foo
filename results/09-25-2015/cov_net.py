@@ -91,11 +91,20 @@ def conct_prom_enh(pp, yy, dat_X_E, match, max_enhancer_num, i):
         del data_tmp
         del costs
         gc.collect()
+        gc.collect()
+        gc.collect()
+        gc.collect()
+
     else:
         enhancer_index = max_enhancer_num*[-1]
         res = [np.dstack((pp, np.dstack(dat_X_E[enhancer_index])))]
     del enhancer_index
     gc.collect()
+    gc.collect()
+    gc.collect()
+    gc.collect()
+    gc.collect()
+    gc.collect()    
     return res
 
 
@@ -183,11 +192,12 @@ for i in range(epchs):
         cost = train(trX[index][start:end], trY[index][start:end])
     preds = predict(trX)
     print np.mean(categorical_crossentropy(preds, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds, axis=1))
-
+gc.collect()
+gc.collect()
+gc.collect()
 gc.collect()
 
-
-a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(100)]
+a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(len(trX))]
 
 
 ##enhancer_list = []
