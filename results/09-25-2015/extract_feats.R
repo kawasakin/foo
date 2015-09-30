@@ -37,7 +37,7 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 }
 
 file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_promoter.bed"
-file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_400K_flanking.bed"
+file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_200K_flanking.bed"
 file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancers.2K.bed"
 
 promoters = read.table(file_promoter)

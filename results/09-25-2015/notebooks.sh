@@ -9,7 +9,8 @@
 #PBS -m ae
 #PBS -A ren-group
 
-### qsub -I -q hotel -N ConvNet -l nodes=1:ppn=1 -l walltime=100:00:00 -A ren-group 
+### qsub -I -q hotel -N ConvNet2 -l nodes=8:ppn=1 -l walltime=100:00:00 -A ren-group 
+### qsub -I -q gpu-hotel -N ConvNet-GPU -l nodes=1:ppn=3 -l walltime=100:00:00 -A ren-group
 PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
 GENE_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel
 ENHANCER_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt
@@ -22,9 +23,11 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 # 2. extract promoter regions
 #/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
 
+
+
 # 3. extreact enhancers that overlap with flanking regions
 awk '{printf "%s\t%d\t%d\n", $1, $2+1000, $3-1000}' /oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt |\
-intersectBed -u -wa -a - -b gene_400K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
+intersectBed -u -wa -a - -b gene_200K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
 
 # 4. bin the region and extract features
 # /opt/R/bin/Rscript extract_feats.R
