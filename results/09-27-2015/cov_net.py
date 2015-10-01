@@ -111,3 +111,4 @@ for i in range(epchs):
         cost = train(trX[index][start:end], trY[index][start:end])
     print train(trX, trY), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
 pearsonr(teY[:,1], predict(teX)[:,1])
+

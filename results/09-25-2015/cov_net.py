@@ -87,6 +87,32 @@ def all_subsets(ss, num):
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
+def update_X(start, end, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
+    res = []
+    promoters_lst = []
+    enhancers_lst = []
+    for i in xrange(start, end):
+        if i in matches:
+            tmp = all_subsets(matches[i], max_enhancer_num)
+            enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
+            enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+            promoters_lst += [i] * len(enhancer_index)
+            enhancers_lst += enhancer_index
+        else:
+            promoters_lst.append(i)
+            enhancers_lst.append(max_enhancer_num*[-1])    
+    pp = dat_X_P[promoters_lst]
+    ee = np.array(map(np.dstack, dat_X_E[enhancers_lst]))
+    dat_X_update = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
+    preds = predict(dat_X_update)
+    costs = cross_entropy(preds[:,1], trY[promoters_lst, 1])
+    intervals = [0] + list(accumu(collections.Counter(promoters_lst).values()))
+    for i in xrange(len(intervals)-1):
+        best_index = np.argmin(costs[intervals[i]:intervals[i+1]])
+        res.append(dat_X_update[intervals[i]:intervals[i+1]][best_index])
+    gc.collect()
+    gc.collect()
+    return res
 
 num_class = 2
 p_drop_conv = 0.3
@@ -94,7 +120,7 @@ p_drop_hidden = 0.5
 
 mini_batch_size = 100 #[40 - 100]
 lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 4
+epchs = 20
 
 feat_num = 17
 chip_motif_len = 6
@@ -107,7 +133,7 @@ dat_X_P = gen_chip_feature("datX_P.dat", 29)    # promoter 3k
 dat_X_E = gen_chip_feature("datX_E.dat", 19)    # enhancer 2k
 dat_Y = gen_target("datY.dat", 2)               # target 
 matches = gen_matches("matches.txt")
-max_enhancer_num = 4
+max_enhancer_num = 3
 
 # add one more fake enhancer to the end of dat_X_E
 e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
@@ -131,8 +157,6 @@ for i in xrange(len(dat_X_P)):
         p = np.dstack((p, e)) 
     dat_X.append(p)
 dat_X = np.array(dat_X)
-
-
 
 # seperate training and testing data
 train_index = np.array(range(len(dat_X)))
@@ -169,74 +193,40 @@ for i in range(epchs):
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
     preds = predict(trX)
-    print np.mean(categorical_crossentropy(preds, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds, axis=1))
+    print np.mean(cross_entropy(preds, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds, axis=1))
+
+
 gc.collect()
 gc.collect()
 gc.collect()
 gc.collect()
 
-#a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(len(trX))]
-def update_X(start, end, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
-    res = []
-    promoters_lst = []
-    enhancers_lst = []
-    for i in xrange(start, end):
-        if i in matches:
-            tmp = all_subsets(matches[i], max_enhancer_num)
-            enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
-            enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
-            promoters_lst += [i] * len(enhancer_index)
-            enhancers_lst += enhancer_index
-        else:
-            promoters_lst.append(i)
-            enhancers_lst.append(max_enhancer_num*[-1])    
-    pp = dat_X_P[promoters_lst]
-    ee = np.array(map(np.dstack, dat_X_E[enhancers_lst]))
-    dat_X_update = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
-    preds = predict(dat_X_update)
-    costs = cross_entropy(preds[:,1], trY[promoters_lst, 1])
-    intervals = [0] + list(accumu(collections.Counter(promoters_lst).values()))
-    for i in xrange(len(intervals)-1):
-        best_index = np.argmin(costs[intervals[i]:intervals[i+1]])
-        res.append(dat_X_update[intervals[i]:intervals[i+1]][best_index])
-    %xdel best_index
-    %xdel pp
-    %xdel ee
-    %xdel dat_X_update
-    %xdel preds
-    %xdel costs
-    %xdel intervals
-    gc.collect()
-    gc.collect()
-    return res
 
-a = update_X(0, 4000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
-b = update_X(4000, 8000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
-c = update_X(8000, dat_X_P.shape[0], matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+res = []
+res += update_X(0, 4000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+gc.collect()
+res += update_X(4000, 8000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+gc.collect()
+res += update_X(8000, dat_X_P.shape[0], matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+gc.collect()
 
-res = a+b+c
+w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
+w2 = init_weights((chip_motif_num, hidden_unit_num))
+w3 = init_weights((hidden_unit_num, num_class))
 
-#ee = np.array(ee)
-#preds = predict(ee)
-#costs = categorical_crossentropy(preds, trY[promoter_list])
-#x = Counter(promoter_list)
-#
-#del ee
-#del preds
-#del promoter_list
+train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
+predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
-#dat_X_tmp = np.array([np.dstack((dat_X_P[x], np.dstack(dat_X_E[list(y)]))) for (x, y) in zip(promoter_list, enhancer_list)])
+trX = np.array(res)
+index = np.array(xrange(trX.shape[0]))
+for i in range(epchs):
+    random.shuffle(index)
+    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
+        costs = train(trX[index][start:end], trY[index][start:end])
+    print np.mean(cross_entropy(predict(trX[index]), trY[index])), np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
+    
+#print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
+print 
 
-#trX = dat_X
-#index = np.array(xrange(trX.shape[0]))
-#for i in range(epchs):
-#    random.shuffle(index)
-#    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
-#        cost = train(trX[index][start:end], trY[index][start:end])
-#    print categorical_crossentropy(predict(trX[index]), trY[index])
-#    
-##print cost, np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
-#print np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1))
-#
-#a = predict(trX)
-#pearsonr(a[:,1], np.array(range(len(trY))))
+a = predict(trX)
+pearsonr(a[:,1], np.array(range(len(trY))))
