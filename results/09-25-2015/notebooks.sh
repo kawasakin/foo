@@ -18,16 +18,16 @@ ENHANCER_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enha
 cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 
 # 1. extract studied genes
-#/opt/R/bin/Rscript extract_genes.R 100000 0 gene_40K_flanking.bed
+/opt/R/bin/Rscript extract_genes.R 3000 0 gene_3k_promoter.bed 
 
 # 2. extract promoter regions
-#/opt/R/bin/Rscript extract_genes.R 3000 0 gene_promoter.bed
-
-
+/opt/R/bin/Rscript extract_genes.R 50000 50000 gene_100k_flanking.bed 
 
 # 3. extreact enhancers that overlap with flanking regions
 awk '{printf "%s\t%d\t%d\n", $1, $2+1000, $3-1000}' /oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt |\
-intersectBed -u -wa -a - -b gene_200K_flanking.bed | sort - | uniq - > enhancers.2K.bed 
+intersectBed -u -wa -a - -b gene_100k_flanking.bed | sort - | uniq - > enhancers.2K.bed 
+
+# 4. extract the enhancer-promoter matches
 
 # 4. bin the region and extract features
 # /opt/R/bin/Rscript extract_feats.R

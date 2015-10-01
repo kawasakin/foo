@@ -36,30 +36,16 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 	return(bins.array)
 }
 
-file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_promoter.bed"
-file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_up_100K_flanking.bed"
+
+file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_3k_promoter.bed"
 file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancers.2K.bed"
 
 promoters = read.table(file_promoter)
-flankings = read.table(file_flanking)
 enhancers = read.table(file_enhancer)
 
 colnames(promoters) = c("chr", "start", "end", "FPRM", "strand", "group")
-colnames(flankings) = c("chr", "start", "end", "FPRM", "strand", "group")
 colnames(enhancers) = c("chr", "start", "end")
 enhancers$strand = "+"
-
-promoters.gr <- with(promoters, GRanges(chr, IRanges(start, end), strand="*"))
-flankings.gr <- with(flankings, GRanges(chr, IRanges(start, end), strand="*"))
-enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start, end), strand="*"))
-
-ov <- findOverlaps(flankings.gr, enhancers.gr)
-matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
-
-matches = matches[order(matches[,1]),]
-write.table(matches-1, file = "matches.txt", append = FALSE, quote = FALSE, sep = "\t",
-eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-fileEncoding = "")
 
 bins.promoters <- bin_regions(promoters, region_len = 3000, bin_size=100)
 bins.enhancers <- bin_regions(enhancers, region_len = 2000, bin_size=100)
