@@ -37,8 +37,7 @@ genes = genes[order(genes$FPKM),]
 genes = rbind(genes[1:4431,], genes[(nrow(genes)-6609):nrow(genes),])
 a = data.frame(cut(genes$FPKM[1:4331], 4, labels=c(0, 0.1, 0.2, 0.3)))
 b = data.frame(cut(genes$FPKM[4332:nrow(genes)], 5, labels=c(0.6, 0.7, 0.8, 0.9, 1)))
-colnames(a) = colnames(b) = "label"
-
+colnames(a) = colnames(b) = "exp"
 write.table(data.frame(rbind(a,b)), file ="datY.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE,
 col.names = FALSE, qmethod = c("escape", "double"),

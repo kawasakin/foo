@@ -39,11 +39,10 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-27-2015/promoters.bed"
 
 promoters = read.table(file_promoter)
-colnames(promoters) = c("chr", "start", "end", "strand", "FPRM", "index")
+colnames(promoters) = c("chr", "start", "end", "FPRM", "strand", "index")
 
 promoters.gr <- with(promoters, GRanges(chr, IRanges(start, end), strand="*"))
-
-bins.promoters <- bin_regions(promoters, region_len = 4000, bin_size=50)
+bins.promoters <- bin_regions(promoters, region_len = 3000, bin_size=100)
 
 feat.fnames = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/E14_CHD2.bed",
@@ -71,9 +70,5 @@ res = do.call(rbind, bin.promoters.feat)
 
 
 write.table(res, file = "datX.dat", append = FALSE, quote = FALSE, sep = "\t",
-eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-fileEncoding = "")
-
-write.table(promoters$FPRM, file = "datY.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
 fileEncoding = "")

@@ -37,12 +37,10 @@ def gen_chip_feature(fname, region_len=79):
     dat_X = dat.reshape(-1, 1, 17, region_len)
     return dat_X
             
-def gen_target(fname, n=2):
+def gen_target(fname):
     with open(fname) as fin:
         dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
-    dat_Y = dat_Y
-    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
-    return dat_Y
+    return np.dstack((1 - dat_Y, dat_Y)).reshape(-1, 2)
 
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
@@ -75,10 +73,9 @@ chip_motif_len = 10
 chip_motif_num = 40
 hidden_unit_num = 100
 
-max_pool_shape = (1, 500000000)
 
-dat_X = gen_chip_feature("datX.dat", 79)
-dat_Y = gen_target("datY.dat", n=10)
+dat_X = gen_chip_feature("datX.dat", 29)
+dat_Y = gen_target("datY.dat")
 
 # seperate training and testing data
 train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
@@ -95,14 +92,13 @@ Y = T.fmatrix()
 
 w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
 w2 = init_weights((chip_motif_num, hidden_unit_num))
-w3 = init_weights((hidden_unit_num, 10))
+w3 = init_weights((hidden_unit_num, 2))
 
 noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
 py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
 
 cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
 params = [w1, w2, w3]
-lr = 0.001
 updates = RMSprop(cost, params, lr)
 
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
@@ -113,6 +109,5 @@ for i in range(epchs):
     np.random.shuffle(index)
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
-    print cost
-
-pearsonr(np.argmax(teY, axis=1), np.argmax(predict(teX), axis=1))
+    print train(trX, trY), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
+pearsonr(teY[:,1], predict(teX)[:,1])
