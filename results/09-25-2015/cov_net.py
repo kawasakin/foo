@@ -56,6 +56,12 @@ def gen_target(fname, n=2):
     dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
     return dat_Y
 
+def accumu(lis):
+    total = 0
+    for x in lis:
+        total += x
+        yield total
+        
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
     updates = []
@@ -80,55 +86,6 @@ def all_subsets(ss, num):
 
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
-
-def encode(input_string):
-    count = 1
-    prev = ''
-    lst = []
-    for character in input_string:
-        if character != prev:
-            if prev:
-                entry = (prev,count)
-                lst.append(entry)
-                #print lst
-            count = 1
-            prev = character
-        else:
-            count += 1
-    else:
-        entry = (character,count)
-        lst.append(entry)
-    return lst
- 
-
-def conct_prom_enh(pp, yy, dat_X_E, match, max_enhancer_num, i):
-    print i
-    if len(match) > 0:
-        tmp = all_subsets(match, max_enhancer_num)
-        enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
-        enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
-        data_tmp = np.array([np.dstack((pp, x)) for x in [np.dstack(dat_X_E[list(x)]) for x in enhancer_index]])
-        costs = list(categorical_crossentropy(predict(data_tmp), np.array(list(yy)*data_tmp.shape[0]).reshape(-1, 2)))
-        res = data_tmp[costs.index(min(costs))]
-        del tmp
-        del data_tmp
-        del costs
-        gc.collect()
-        gc.collect()
-        gc.collect()
-        gc.collect()
-
-    else:
-        enhancer_index = max_enhancer_num*[-1]
-        res = [np.dstack((pp, np.dstack(dat_X_E[enhancer_index])))]
-    del enhancer_index
-    gc.collect()
-    gc.collect()
-    gc.collect()
-    gc.collect()
-    gc.collect()
-    gc.collect()    
-    return res
 
 
 num_class = 2
@@ -219,47 +176,45 @@ gc.collect()
 gc.collect()
 
 #a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(len(trX))]
+def update_X(start, end, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
+    res = []
+    promoters_lst = []
+    enhancers_lst = []
+    for i in xrange(start, end):
+        if i in matches:
+            tmp = all_subsets(matches[i], max_enhancer_num)
+            enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
+            enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+            promoters_lst += [i] * len(enhancer_index)
+            enhancers_lst += enhancer_index
+        else:
+            promoters_lst.append(i)
+            enhancers_lst.append(max_enhancer_num*[-1])    
+    pp = dat_X_P[promoters_lst]
+    ee = np.array(map(np.dstack, dat_X_E[enhancers_lst]))
+    dat_X_update = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
+    preds = predict(dat_X_update)
+    costs = cross_entropy(preds[:,1], trY[promoters_lst, 1])
+    intervals = [0] + list(accumu(collections.Counter(promoters_lst).values()))
+    for i in xrange(len(intervals)-1):
+        best_index = np.argmin(costs[intervals[i]:intervals[i+1]])
+        res.append(dat_X_update[intervals[i]:intervals[i+1]][best_index])
+    %xdel best_index
+    %xdel pp
+    %xdel ee
+    %xdel dat_X_update
+    %xdel preds
+    %xdel costs
+    %xdel intervals
+    gc.collect()
+    gc.collect()
+    return res
 
+a = update_X(0, 4000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+b = update_X(4000, 8000, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+c = update_X(8000, dat_X_P.shape[0], matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
 
-promoters_lst = []
-enhancers_lst = []
-for i in xrange(0, 10):
-    if i in matches:
-        tmp = all_subsets(matches[i], max_enhancer_num)
-        enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
-        enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
-        promoters_lst += [i] * len(enhancer_index)
-        enhancers_lst += enhancer_index
-        #enhancer_list += enhancer_index
-        #data_tmp = [np.dstack((p, x)) for x in [np.dstack(dat_X_E[list(x)]) for x in enhancer_index]]
-        #costs = list(categorical_crossentropy(predict(dat_X_tmp), np.array(list(trY[i])*dat_X_tmp.shape[0]).reshape(-1, 2)))
-        #res = dat_X_tmp[costs.index(min(costs))]
-    else:
-        promoters_lst.append(i)
-        enhancers_lst.append(max_enhancer_num*[-1])
-        #enhancer_list += max_enhancer_num*[-1]
-        #enhancer_index = max_enhancer_num*[-1]
-        #ee += [np.dstack((p, np.dstack(dat_X_E[enhancer_index])))]
-        #enhancer_index = None
-        #p = None
-        #gc.collect()
-    #dat_X.append(res)
-
-pp = dat_X_P[promoters_lst]
-ee = np.array(map(np.dstack, dat_X_E[enhancers_lst]))
-dat_X_update = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
-preds = predict(dat_X_update)
-costs = cross_entropy(preds[:,1], trY[promoters_lst, 1])
-
-
-
-np.hstack((pp, ee))
-enhancers_lst = [[0, 1, 2], [1,2,3], [2,3,4]]
-dat_X_E[0] = 0
-dat_X_E[1] = 1
-dat_X_E[2] = 2
-dat_X_E[3] = 3
-dat_X_E[4] = 4
+res = a+b+c
 
 #ee = np.array(ee)
 #preds = predict(ee)
