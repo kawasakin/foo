@@ -78,6 +78,29 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
 def all_subsets(ss, num):
     return chain(*map(lambda x: combinations(ss, x), range(num+1)))
 
+def cross_entropy(a, y):
+    return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
+
+def encode(input_string):
+    count = 1
+    prev = ''
+    lst = []
+    for character in input_string:
+        if character != prev:
+            if prev:
+                entry = (prev,count)
+                lst.append(entry)
+                #print lst
+            count = 1
+            prev = character
+        else:
+            count += 1
+    else:
+        entry = (character,count)
+        lst.append(entry)
+    return lst
+ 
+
 def conct_prom_enh(pp, yy, dat_X_E, match, max_enhancer_num, i):
     print i
     if len(match) > 0:
@@ -183,8 +206,6 @@ updates = RMSprop(cost, params, lr)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
-categorical_crossentropy = theano.function(inputs=[Y, Z], outputs=T.nnet.categorical_crossentropy(Y, Z), allow_input_downcast=True)
-
 index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
@@ -197,31 +218,49 @@ gc.collect()
 gc.collect()
 gc.collect()
 
-a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(len(trX))]
+#a = [conct_prom_enh(dat_X_P[i], trY[i], dat_X_E, matches[i], max_enhancer_num, i) for i in xrange(len(trX))]
 
 
-##enhancer_list = []
-#for i in xrange(4000, 7000):
-#    p = dat_X_P[i]
-#    if i in matches:
-#        tmp = all_subsets(matches[i], max_enhancer_num)
-#        enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
-#        enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
-#        promoter_list += [i] * len(enhancer_index)
-#        #enhancer_list += enhancer_index
-#        data_tmp = [np.dstack((p, x)) for x in [np.dstack(dat_X_E[list(x)]) for x in enhancer_index]]
-#        #costs = list(categorical_crossentropy(predict(dat_X_tmp), np.array(list(trY[i])*dat_X_tmp.shape[0]).reshape(-1, 2)))
-#        #res = dat_X_tmp[costs.index(min(costs))]
-#    else:
-#        promoter_list += [i]
-#        #enhancer_list += max_enhancer_num*[-1]
-#        enhancer_index = max_enhancer_num*[-1]
-#        ee += [np.dstack((p, np.dstack(dat_X_E[enhancer_index])))]
-#        #enhancer_index = None
-#        #p = None
-#        #gc.collect()
-#    #dat_X.append(res)
-#
+promoters_lst = []
+enhancers_lst = []
+for i in xrange(0, 10):
+    if i in matches:
+        tmp = all_subsets(matches[i], max_enhancer_num)
+        enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
+        enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+        promoters_lst += [i] * len(enhancer_index)
+        enhancers_lst += enhancer_index
+        #enhancer_list += enhancer_index
+        #data_tmp = [np.dstack((p, x)) for x in [np.dstack(dat_X_E[list(x)]) for x in enhancer_index]]
+        #costs = list(categorical_crossentropy(predict(dat_X_tmp), np.array(list(trY[i])*dat_X_tmp.shape[0]).reshape(-1, 2)))
+        #res = dat_X_tmp[costs.index(min(costs))]
+    else:
+        promoters_lst.append(i)
+        enhancers_lst.append(max_enhancer_num*[-1])
+        #enhancer_list += max_enhancer_num*[-1]
+        #enhancer_index = max_enhancer_num*[-1]
+        #ee += [np.dstack((p, np.dstack(dat_X_E[enhancer_index])))]
+        #enhancer_index = None
+        #p = None
+        #gc.collect()
+    #dat_X.append(res)
+
+pp = dat_X_P[promoters_lst]
+ee = np.array(map(np.dstack, dat_X_E[enhancers_lst]))
+dat_X_update = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
+preds = predict(dat_X_update)
+costs = cross_entropy(preds[:,1], trY[promoters_lst, 1])
+
+
+
+np.hstack((pp, ee))
+enhancers_lst = [[0, 1, 2], [1,2,3], [2,3,4]]
+dat_X_E[0] = 0
+dat_X_E[1] = 1
+dat_X_E[2] = 2
+dat_X_E[3] = 3
+dat_X_E[4] = 4
+
 #ee = np.array(ee)
 #preds = predict(ee)
 #costs = categorical_crossentropy(preds, trY[promoter_list])
