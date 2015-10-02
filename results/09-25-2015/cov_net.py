@@ -231,6 +231,7 @@ updates = RMSprop(cost, params, lr)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
+final = []
 index = np.array(xrange(trX.shape[0]))
 for i in range(epchs):
     random.shuffle(index)
@@ -238,12 +239,17 @@ for i in range(epchs):
         cost = train(trX[index][start:end], trY[index][start:end])
     preds_te = np.array(map(lambda x: predict(x.reshape(1,1,17,-1)), teX)).reshape(-1, 2)
     preds_tr = predict(trX_update)
-    print np.mean(cross_entropy(preds_tr, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), np.mean(cross_entropy(preds_te, teY)), np.mean(np.argmax(teY, axis=1) == np.argmax(preds_te, axis=1))
+    if i >= 10:
+        final.append((0, 
+                np.mean(cross_entropy(preds_tr, trY)), 
+                np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
+                np.mean(cross_entropy(preds_te, teY)), 
+                np.mean(np.argmax(teY, axis=1) == np.argmax(preds_te, axis=1))
+                ))
 gc.collect()
 
 # Model 2 update X
-final = []
-for kk in xrange(20):
+for kk in xrange(1, 100):
     print kk
     res = []
     res += update_X(0, 3000, matches_dist, max_enhancer_num, trX, dat_X_E, trY)
@@ -256,13 +262,14 @@ for kk in xrange(20):
     w3 = init_weights((hidden_unit_num, num_class))
     
     index = np.array(xrange(trX.shape[0]))
-    for i in range(10):
+    for i in range(20):
         random.shuffle(index)
         for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
             cost = train(trX[index][start:end], trY[index][start:end])
         preds_te = np.array(map(lambda x: predict(x.reshape(1,1,17,-1)), teX)).reshape(-1, 2)
         preds_tr = predict(trX_update)
-        final.append((kk, np.mean(cross_entropy(preds_tr, trY)), 
+        if(i>=10):
+            final.append((kk, np.mean(cross_entropy(preds_tr, trY)), 
                       np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
                       np.mean(cross_entropy(preds_te, teY)), 
                       np.mean(np.argmax(teY, axis=1) == np.argmax(preds_te, axis=1))
