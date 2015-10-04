@@ -94,7 +94,7 @@ p_drop_hidden = 0.5
 
 mini_batch_size = 50 #[40 - 100]
 lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 20
+epchs = 50
 
 feat_num = 17
 chip_motif_len = 6
@@ -104,7 +104,7 @@ max_enhancer_num = 3
 
 max_pool_shape = (1, 500000000)
 
-dat_X = gen_chip_feature("datX_P.dat", 29)    # promoter 3k
+dat_X = gen_chip_feature("datX_P.dat", 29)      # promoter 3k
 dat_Y = gen_target("datY.dat", 2)               # target 
 
 train_index = random.sample(range(dat_X.shape[0]),  dat_X.shape[0]*4/5)
@@ -140,5 +140,3 @@ for i in range(epchs):
     preds_tr = predict(trX)
     preds_te = predict(teX)
     print np.mean(cross_entropy(predict(trX), trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1)), np.mean(cross_entropy(preds_te, teY)), np.mean(np.argmax(teY, axis=1) == np.argmax(preds_te, axis=1)) 
-
-

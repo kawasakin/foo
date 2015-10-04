@@ -129,7 +129,7 @@ feat_num = 17
 chip_motif_len = 6
 chip_motif_num = 50
 hidden_unit_num = 100
-max_enhancer_num = 3
+max_enhancer_num = 4
 
 max_pool_shape = (1, 500000000)
 
@@ -138,74 +138,16 @@ dat_X_E = gen_chip_feature("datX_E.dat", 19)    # enhancer 2k
 dat_Y = gen_target("datY.dat", 2)               # target 
 
 matches_dist = gen_matches("matches_distance.txt")
-#matches_loop = gen_matches("matches_loops.txt")
 
 # add one more fake enhancer to the end of dat_X_E
 e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
 dat_X_E = np.vstack((dat_X_E, e)) 
 
-train_index = random.sample(range(dat_X_P.shape[0]),  dat_X_P.shape[0]*4/5)
-test_index  = list(set(range(dat_X_P.shape[0])) - set(train_index))
-
-#tmp = sorted(matches_loop.items(), key=lambda x: x[0]) 
-#test_index = [x[0] for x in tmp]
-#train_index = sorted(list(set(range(dat_X_P.shape[0])) - set(test_index)))
-# update match_loop
-#matches_loop = dict([(i, tmp[i][1]) for i in xrange(len(tmp))])
-#matches_dist = dict([(i, matches_dist[train_index[i]]) for i in xrange(len(train_index))])
-
-# get train and test promoter part
-trX = dat_X_P[train_index]
-trY = dat_Y[train_index]
-teX = dat_X_P[test_index]
-teY = dat_Y[test_index]
-
-# Model 0 let's first predict everything only by promoter
-X = T.ftensor4()
-Y = T.fmatrix()
-w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-w2 = init_weights((chip_motif_num, hidden_unit_num))
-w3 = init_weights((hidden_unit_num, num_class))
-noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
-py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
-
-cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
-params = [w1, w2, w3]
-updates = RMSprop(cost, params, lr)
-
-train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
-
-index = np.array(xrange(trX.shape[0]))
-for i in range(epchs):
-    random.shuffle(index)
-    for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
-        cost = train(trX[index][start:end], trY[index][start:end])
-    preds_tr = predict(trX)
-    preds_te = predict(teX)
-    print np.mean(cross_entropy(predict(trX), trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(predict(trX), axis=1)), np.mean(cross_entropy(preds_te, teY)), np.mean(np.argmax(teY, axis=1) == np.argmax(preds_te, axis=1)) 
-
-########################################################################################################################
-########################################################################################################################
 # add enhancers to promoters for test 
 trX = dat_X_P
 trY = dat_Y
 
-dat_X = []
-#for i in xrange(len(teX)):
-#    p = teX[i] 
-#    if i in matches_loop:
-#        enhancer_index = matches_loop[i]
-#        e = np.dstack(dat_X_E[enhancer_index])
-#        p = np.dstack((p, e))
-#    else: # no nehancers
-#        enhancer_index = max_enhancer_num*[-1]
-#        e = np.dstack(dat_X_E[enhancer_index])
-#        p = np.dstack((p, e)) 
-#    dat_X.append(p)
-#teX = dat_X
-# Model 1 randomly assign enhancer to promoters
-
+# model 0 - random assign enhancers to promoters
 dat_X = []
 for i in xrange(len(trX)):
     p = trX[i]    
@@ -223,6 +165,9 @@ for i in xrange(len(trX)):
         p = np.dstack((p, e)) 
     dat_X.append(p)
 trX_update = np.array(dat_X)
+
+X = T.ftensor4()
+Y = T.fmatrix()
 
 # re-init the weight
 w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
@@ -247,7 +192,7 @@ for i in range(epchs):
         cost = train(trX[index][start:end], trY[index][start:end])
     preds_tr = predict(trX_update)
     print 0, np.mean(cross_entropy(preds_tr, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
-    final.append((0, 
+    final.append(( 
             np.mean(cross_entropy(preds_tr, trY)), 
             np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
         ))
@@ -276,9 +221,9 @@ for kk in xrange(1, 100):
     trX_update = np.array(res)
     a = np.array(enhancers)
 
-    #w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-    #w2 = init_weights((chip_motif_num, hidden_unit_num))
-    #w3 = init_weights((hidden_unit_num, num_class))
+    w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
+    w2 = init_weights((chip_motif_num, hidden_unit_num))
+    w3 = init_weights((hidden_unit_num, num_class))
     
     index = np.array(xrange(trX.shape[0]))
     for i in range(20):
