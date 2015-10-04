@@ -24,3 +24,10 @@ data$X2 = 1:nrow(data)
 color_transparent <- adjustcolor(data$V1, alpha.f = 0.3) 
 plot(data$X2, data$V2, col=color_transparent, pch=19, xlab="", xaxt='n', ann=FALSE)
 
+
+n = 100
+a = rnorm(n, mean = 0.35, sd = 0.04)
+b = rnorm(n, mean = 0.27, sd = 0.04)
+c = rnorm(n, mean = 0.25, sd = 0.02)
+d = rnorm(n, mean = 0.23, sd = 0.01)
+boxplot(a, b, c, d)
