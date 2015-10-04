@@ -36,7 +36,6 @@ get_bin_feature <- function(bins, feat.fnames, feat.names){
 	return(bins.array)
 }
 
-
 file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_3k_promoter.bed"
 file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancers.2K.bed"
 

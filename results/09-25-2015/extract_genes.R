@@ -7,8 +7,8 @@ flanking_down_len = as.integer(args[2])
 out_file = args[3]
 
 file_gene = "/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel"
-flanking_up_len   = 50000
-flanking_down_len = 50000
+flanking_up_len   = 50000 #50k
+flanking_down_len = 50000 #50k
 out_file="gene_100k_flanking.bed"
 
 get_promoter <- function(genes, upstream_region=3000, downstream_region=2000){

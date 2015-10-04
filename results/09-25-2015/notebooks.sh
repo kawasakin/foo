@@ -9,7 +9,7 @@
 #PBS -m ae
 #PBS -A ren-group
 
-### qsub -I -q hotel -N ConvNet2 -l nodes=8:ppn=1 -l walltime=100:00:00 -A ren-group 
+### qsub -I -q hotel -N cov_net -l nodes=10:ppn=3 -l walltime=100:00:00 -A ren-group 
 ### qsub -I -q gpu-hotel -N ConvNet-GPU -l nodes=1:ppn=3 -l walltime=100:00:00 -A ren-group
 PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
 GENE_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel
