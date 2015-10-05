@@ -208,12 +208,14 @@ for i in range(epchs):
 gc.collect()
 
 # Model 2 update X
+enhancers = []
 for kk in xrange(2, 100):
     (trX_update, enhancer) = update_trX(2000, matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+    enhancers.append(enhancer)
     w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
     w2 = init_weights((chip_motif_num, hidden_unit_num))
     w3 = init_weights((hidden_unit_num, num_class))
-    
+        
     index = np.array(xrange(trX_update.shape[0]))
     for i in range(epchs):
         random.shuffle(index)
@@ -221,9 +223,9 @@ for kk in xrange(2, 100):
             cost = train(trX_update[index][start:end], trY[index][start:end])
         preds_tr = predict(trX_update)
         print 0, np.mean(cross_entropy(preds_tr, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
-        final.append((kk, 
-                np.mean(cross_entropy(preds_tr, trY)), 
-                np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
-            ))
+        #final.append((kk, 
+        #        np.mean(cross_entropy(preds_tr, trY)), 
+        #        np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
+        #    ))
     gc.collect()
                     
