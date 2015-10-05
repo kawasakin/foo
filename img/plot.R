@@ -31,3 +31,39 @@ b = rnorm(n, mean = 0.27, sd = 0.04)
 c = rnorm(n, mean = 0.25, sd = 0.02)
 d = rnorm(n, mean = 0.23, sd = 0.01)
 boxplot(a, b, c, d)
+
+
+# loops
+library(GenomicRanges)
+data = read.table("../results/09-25-2015/loops_pred.txt")
+a1 = data.frame(1:(nrow(data)), data[,1]+1)
+a2 = data.frame(1:(nrow(data)), data[,2]+1)
+a3 = data.frame(1:(nrow(data)), data[,3]+1)
+a4 = data.frame(1:(nrow(data)), data[,4]+1)
+
+a1 = a1[which(a1[,2]>0),]
+a2 = a2[which(a2[,2]>0),]
+a3 = a3[which(a3[,2]>0),]
+a4 = a4[which(a4[,2]>0),]
+
+colnames(a1) = colnames(a2) = colnames(a3) = colnames(a4) = c("id", "e")
+a = rbind(a1, a2, a3, a4)
+colnames(a) = c("p", "e")
+a = a[order(a$p),]
+
+
+b = read.table("../results/09-25-2015/matches_loops.txt")
+b = b + 1
+colnames(b) = c("p", "e")
+
+# chose those that overlap with b
+a = a[which(a$p %in% b$p),]
+a$be = b$e[match(a$p, b$p)]
+
+promoters = read.table("../results/09-25-2015/gene_3k_promoter.bed")
+enhancers = read.table("../results/09-25-2015/enhancers.2K.bed")
+
+
+nrow(a[which(a[,1]<4431),])/4431
+nrow(a[which(a[,1]>=4431),])/6610
+
