@@ -116,6 +116,16 @@ def update_X(start, end, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
     gc.collect()
     return [res, res_enh]
 
+def update_trX(num, matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
+    intervals = range(0, dat_X_P.shape[0], num) + [dat_X_P.shape[0]]
+    res = []  
+    enhancers = []  
+    for i in xrange(len(intervals)-1):
+        a = update_X(intervals[i], intervals[i+1], matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+        res += a[0]
+        enhancers += a[1]
+    return (np.array(res), np.array(enhancers))
+    
 
 num_class = 2
 p_drop_conv = 0.3
@@ -123,7 +133,7 @@ p_drop_hidden = 0.5
 
 mini_batch_size = 50 #[40 - 100]
 lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 20
+epchs = 15
 
 feat_num = 17
 chip_motif_len = 6
@@ -191,54 +201,29 @@ for i in range(epchs):
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
     preds_tr = predict(trX_update)
-    print 0, np.mean(cross_entropy(preds_tr, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
-    final.append(( 
+    final.append((0, 
             np.mean(cross_entropy(preds_tr, trY)), 
             np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
         ))
 gc.collect()
 
 # Model 2 update X
-for kk in xrange(1, 100):
-    print kk
-    res = []  
-    enhancers = []  
-    a = update_X(0, 3000, matches_dist, max_enhancer_num, trX, dat_X_E, trY)
-    res += a[0]
-    enhancers += a[1]
-    del a 
-    gc.collect()
-    a = update_X(3000, 6000, matches_dist, max_enhancer_num, trX, dat_X_E, trY)
-    res += a[0]
-    enhancers += a[1]
-    del a 
-    gc.collect()    
-    a = update_X(6000, trX.shape[0], matches_dist, max_enhancer_num, trX, dat_X_E, trY)
-    res += a[0]
-    enhancers += a[1]
-    del a 
-    gc.collect()
-    trX_update = np.array(res)
-    a = np.array(enhancers)
-
+for kk in xrange(2, 100):
+    (trX_update, enhancer) = update_trX(2000, matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
     w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
     w2 = init_weights((chip_motif_num, hidden_unit_num))
     w3 = init_weights((hidden_unit_num, num_class))
     
-    index = np.array(xrange(trX.shape[0]))
-    for i in range(20):
+    index = np.array(xrange(trX_update.shape[0]))
+    for i in range(epchs):
         random.shuffle(index)
-        for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
-            cost = train(trX[index][start:end], trY[index][start:end])
+        for start, end in zip(range(0, len(trX_update), mini_batch_size), range(mini_batch_size, len(trX_update), mini_batch_size)):
+            cost = train(trX_update[index][start:end], trY[index][start:end])
         preds_tr = predict(trX_update)
         print 0, np.mean(cross_entropy(preds_tr, trY)), np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
-        final.append((0, 
+        final.append((kk, 
                 np.mean(cross_entropy(preds_tr, trY)), 
                 np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1)), 
             ))
-
-    del res
-    del trX_update
-    del index
     gc.collect()
                     
