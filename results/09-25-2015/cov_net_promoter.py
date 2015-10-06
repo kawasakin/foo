@@ -133,7 +133,7 @@ train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_inpu
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
 index = np.array(xrange(trX.shape[0]))
-for i in range(epchs):
+for i in range(100):
     random.shuffle(index)
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])

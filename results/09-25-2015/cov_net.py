@@ -82,15 +82,15 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
-def learning(trX, trY, iter, epchs, mini_batch_size):
+def learning(l_X, trY, iter, epchs, mini_batch_size):
     # model 0 - learning from promoter
     final = []
-    index = np.array(xrange(trX.shape[0]))
+    index = np.array(xrange(l_X.shape[0]))
     for i in range(epchs):
         random.shuffle(index)
-        for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
-            cost = train(trX[index][start:end], trY[index][start:end])
-        preds_tr = predict(trX)
+        for start, end in zip(range(0, len(l_X), mini_batch_size), range(mini_batch_size, len(l_X), mini_batch_size)):
+            cost = train(l_X[index][start:end], trY[index][start:end])
+        preds_tr = predict(l_X)
         costs = np.mean(cross_entropy(preds_tr, trY))
         accur = np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
         print iter, costs, accur
@@ -118,7 +118,7 @@ def update_X(matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
             ee = np.array(map(lambda x: np.dstack(dat_X_E[x]), enhancer_index))
             tmp = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
             preds = predict(tmp)
-            costs = cross_entropy(preds[:,1], trY[[i]*len(enhancer_index), 1])
+            costs = cross_entropy(preds[:,1], dat_Y[[i]*len(enhancer_index), 1])
             res_tmp = tmp[np.argmin(costs)]
             res_enh.append(enhancer_index[np.argmin(costs)])
         else:
@@ -171,11 +171,8 @@ matches_dist = gen_matches("matches_distance.txt")
 e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
 dat_X_E = np.vstack((dat_X_E, e)) 
 
-trX = dat_X_P
-trY = dat_Y
-
 # model 0 that based only on promoters
-res = learning(trX, trY, 0, epchs, mini_batch_size)
+res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 
 # update trX
 enhancers = []
@@ -197,5 +194,5 @@ for i in xrange(1, 50):
     train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
     predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
     # now predict
-    res += learning(trX_update, trY, i, epchs, mini_batch_size)
+    res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
