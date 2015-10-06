@@ -36,10 +36,12 @@ boxplot(a, b, c, d)
 # loops
 library(GenomicRanges)
 data = read.table("../results/09-25-2015/loops_pred.txt")
-a1 = data.frame(1:(nrow(data)), data[,1]+1)
-a2 = data.frame(1:(nrow(data)), data[,2]+1)
-a3 = data.frame(1:(nrow(data)), data[,3]+1)
-a4 = data.frame(1:(nrow(data)), data[,4]+1)
+data$id = rep(1:11041, 22)
+
+a1 = data.frame(data$id, data[,1]+1)
+a2 = data.frame(data$id, data[,2]+1)
+a3 = data.frame(data$id, data[,3]+1)
+a4 = data.frame(data$id, data[,4]+1)
 
 a1 = a1[which(a1[,2]>0),]
 a2 = a2[which(a2[,2]>0),]
@@ -50,7 +52,10 @@ colnames(a1) = colnames(a2) = colnames(a3) = colnames(a4) = c("id", "e")
 a = rbind(a1, a2, a3, a4)
 colnames(a) = c("p", "e")
 a = a[order(a$p),]
-
+freq = table(paste(a[,1], a[,2]))
+loops = names(freq[which(freq==22)])
+a = data.frame(do.call(rbind, strsplit(loops, split=" ")))
+colnames(a) = c("p", "e")
 
 b = read.table("../results/09-25-2015/matches_loops.txt")
 b = b + 1
