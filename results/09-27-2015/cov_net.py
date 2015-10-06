@@ -42,6 +42,14 @@ def gen_target(fname):
         dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
     return np.dstack((1 - dat_Y, dat_Y)).reshape(-1, 2)
 
+
+def gen_target_bin(fname, n=2):
+    with open(fname) as fin:
+        dat_Y = np.loadtxt(StringIO(fin.read()), dtype="float32") 
+    dat_Y = dat_Y + 1
+    dat_Y = np.array([ [0]*(x-1) + [1] + [0]*(n-x) for x in list(dat_Y)])
+    return dat_Y
+
 def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
     grads = T.grad(cost=cost, wrt=params)
     updates = []
@@ -61,21 +69,27 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
     pyx = softmax(T.dot(l2, w3))
     return pyx
 
-p_drop_conv = 0.3
-p_drop_hidden = 0.5
+def cross_entropy(a, y):
+    return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
-mini_batch_size = 40 #[40 - 100]
-lr = 0.001 # [0.0001 - 0.89 (too slow)] [0.001 - 0.90]
-epchs = 20
+num_class = 2           # number of output
+p_drop_conv = 0.3       # dropout rate for cov_layer
+p_drop_hidden = 0.5     # dropout rate for hidden_layer
 
-feat_num = 17
-chip_motif_len = 10
-chip_motif_num = 40
-hidden_unit_num = 100
+mini_batch_size = 50    # [40 - 100]
+lr = 0.001              # learning rate
+epchs = 15              # number of iteration
 
+feat_num = 17           # number of chip features
+chip_motif_len = 6      # length of motif matrix
+chip_motif_num = 50     # number of motifs 
+hidden_unit_num = 100   # number of hidden units
+max_enhancer_num = 4    # max number of enhancers included for each promoter
+
+max_pool_shape = (1, 5000000) # max pool maxtrix size
 
 dat_X = gen_chip_feature("datX.dat", 29)
-dat_Y = gen_target("datY.dat")
+dat_Y = gen_target_bin("datY.binary.dat", 2)
 
 # seperate training and testing data
 train_index = random.sample(xrange(dat_X.shape[0]), dat_X.shape[0]*4/5)
@@ -104,11 +118,21 @@ updates = RMSprop(cost, params, lr)
 train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
+res = []
 index = np.array(range(trX.shape[0]))
-for i in range(epchs):
+for i in range(1, 400):
+    print i
     np.random.shuffle(index)
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
-    print train(trX, trY), np.mean(np.argmax(teY, axis=1) == np.argmax(predict(teX), axis=1))
-pearsonr(teY[:,1], predict(teX)[:,1])
+    pred_tr = predict(trX)
+    pred_te = predict(teX)
+    res.append((i,
+          np.mean(cross_entropy(pred_tr, trY)), \
+          np.mean(np.argmax(trY, axis=1) == np.argmax(pred_tr, axis=1)), \
+          np.mean(cross_entropy(pred_te, teY)), \
+          np.mean(np.argmax(teY, axis=1) == np.argmax(pred_te, axis=1))
+          ))
 
+
+np.savetxt("res.txt", np.array(res))
