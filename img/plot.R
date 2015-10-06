@@ -58,17 +58,30 @@ freq = table(paste(a[,1], a[,2]))
 loops = names(freq[which(freq>=0)])
 a = data.frame(do.call(rbind, strsplit(loops, split=" ")))
 a$freq = freq/num_rep
-write.table(a, file = "a", append = FALSE, quote = FALSE, sep = "\t",
+write.table(a, file = "a.rep2.txt", append = FALSE, quote = FALSE, sep = "\t",
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = FALSE, qmethod = c("escape", "double"),
             fileEncoding = "")
-a = read.table("a") 
-colnames(a) = c("p", "e", "prob")
-a = a[order(a$p),]
 
-b = data.frame(a = 1:34729, prob = c(rep(0, 2133), a$prob))
+rep2 = read.table("a.rep2.txt") 
+colnames(rep2) = c("p", "e", "prob")
+rep2 = rep2[order(rep2$p),]
+
+rep1 = read.table("a") 
+colnames(rep1) = c("p", "e", "prob")
+rep1 = rep1[order(rep1$p),]
+
+rep1 = rep1[rep1$prob>0.5,]
+rep2 = rep2[rep2$prob>0.5,]
+num_overlap = length(which(paste(rep1[,1], rep1[,2]) %in% paste(rep2[,1], rep2[,2])))
+num_overlap/nrow(rep1)
+num_overlap/nrow(rep2)
+
+
+library(ggplot2)
+b = data.frame(a = 1:34729, prob = c(rep(0, 34729-nrow(a)), a$prob))
 m <- ggplot(b, aes(x = prob))
-m + geom_density(colour="darkgreen", size=1, fill="green", adjust=1/3.5)
+m + geom_density(colour="darkgreen", size=1, fill="green")
 
 
 b = read.table("../results/09-25-2015/matches_loops.txt")
@@ -87,9 +100,9 @@ nrow(a[which(a[,1]<4431),])/4431/17
 nrow(a[which(a[,1]>=4431),])/6610/17
 
 ####################
-data = read.table("../results/09-25-2015/res_enh.txt")
+data = read.table("../results/09-25-2015/res_enh.rep2.txt")
 res = data.frame()
-for(i in 0:49*15+5){
+for(i in 0:24*15+5){
 	res = rbind(res, data[i:(i+10),])
 }
 boxplot(V2~V1, res, outline=FALSE, ylab="Cost")
