@@ -176,7 +176,7 @@ res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 
 # update trX
 enhancers = []
-for i in xrange(1, 50):
+for i in xrange(24, 50):
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
     # append the enhancers
     enhancers.append(enh_tmp)
@@ -197,6 +197,6 @@ for i in xrange(1, 50):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 
-np.savetxt("loops_pred.txt", np.array(enhancers).reshape(-1, 4))
-np.savetxt("res_enh.txt", np.array(res))
+np.savetxt("loops_pred.rep2.txt", np.array(enhancers).reshape(-1, 4))
+np.savetxt("res_enh.rep2.txt", np.array(res))
 
