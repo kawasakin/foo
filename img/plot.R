@@ -35,8 +35,10 @@ boxplot(a, b, c, d)
 
 # loops
 library(GenomicRanges)
+num_genes = 11041
 data = read.table("../results/09-25-2015/loops_pred.txt")
-data$id = rep(1:11041, 17)
+num_rep = nrow(data)/num_genes
+data$id = rep(1:num_genes, num_rep)
 
 a1 = data.frame(data$id, data[,1]+1)
 a2 = data.frame(data$id, data[,2]+1)
@@ -55,15 +57,19 @@ a = a[order(a$p),]
 freq = table(paste(a[,1], a[,2]))
 loops = names(freq[which(freq>=0)])
 a = data.frame(do.call(rbind, strsplit(loops, split=" ")))
-a$freq = freq
-a = a[which(a$freq>10),]
+a$freq = freq/num_rep
 write.table(a, file = "a", append = FALSE, quote = FALSE, sep = "\t",
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = FALSE, qmethod = c("escape", "double"),
             fileEncoding = "")
 a = read.table("a") 
-colnames(a) = c("p", "e", "freq")
+colnames(a) = c("p", "e", "prob")
 a = a[order(a$p),]
+
+b = data.frame(a = 1:34729, prob = c(rep(0, 2133), a$prob))
+m <- ggplot(b, aes(x = prob))
+m + geom_density(colour="darkgreen", size=1, fill="green", adjust=1/3.5)
+
 
 b = read.table("../results/09-25-2015/matches_loops.txt")
 b = b + 1
@@ -79,4 +85,17 @@ enhancers = read.table("../results/09-25-2015/enhancers.2K.bed")
 
 nrow(a[which(a[,1]<4431),])/4431/17
 nrow(a[which(a[,1]>=4431),])/6610/17
+
+####################
+data = read.table("../results/09-25-2015/res_enh.txt")
+res = data.frame()
+for(i in 0:49*15+5){
+	res = rbind(res, data[i:(i+10),])
+}
+boxplot(V2~V1, res, outline=FALSE, ylab="Cost")
+boxplot(V3~V1, res, outline=FALSE, ylab="Accr")
+
+
+
+
 
