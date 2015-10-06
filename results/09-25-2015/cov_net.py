@@ -196,3 +196,7 @@ for i in xrange(1, 50):
     # now predict
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
+
+np.savetxt("loops_pred.txt", np.array(enhancers).reshape(-1, 4))
+np.savetxt("res_enh.txt", np.array(res))
+
