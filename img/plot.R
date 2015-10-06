@@ -36,7 +36,7 @@ boxplot(a, b, c, d)
 # loops
 library(GenomicRanges)
 data = read.table("../results/09-25-2015/loops_pred.txt")
-data$id = rep(1:11041, 22)
+data$id = rep(1:11041, 17)
 
 a1 = data.frame(data$id, data[,1]+1)
 a2 = data.frame(data$id, data[,2]+1)
@@ -53,9 +53,17 @@ a = rbind(a1, a2, a3, a4)
 colnames(a) = c("p", "e")
 a = a[order(a$p),]
 freq = table(paste(a[,1], a[,2]))
-loops = names(freq[which(freq==22)])
+loops = names(freq[which(freq>=0)])
 a = data.frame(do.call(rbind, strsplit(loops, split=" ")))
-colnames(a) = c("p", "e")
+a$freq = freq
+a = a[which(a$freq>10),]
+write.table(a, file = "a", append = FALSE, quote = FALSE, sep = "\t",
+            eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+            col.names = FALSE, qmethod = c("escape", "double"),
+            fileEncoding = "")
+a = read.table("a") 
+colnames(a) = c("p", "e", "freq")
+a = a[order(a$p),]
 
 b = read.table("../results/09-25-2015/matches_loops.txt")
 b = b + 1
@@ -69,6 +77,6 @@ promoters = read.table("../results/09-25-2015/gene_3k_promoter.bed")
 enhancers = read.table("../results/09-25-2015/enhancers.2K.bed")
 
 
-nrow(a[which(a[,1]<4431),])/4431
-nrow(a[which(a[,1]>=4431),])/6610
+nrow(a[which(a[,1]<4431),])/4431/17
+nrow(a[which(a[,1]>=4431),])/6610/17
 
