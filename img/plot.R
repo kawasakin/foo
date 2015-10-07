@@ -109,6 +109,16 @@ boxplot(V2~V1, res, outline=FALSE, ylab="Cost")
 boxplot(V3~V1, res, outline=FALSE, ylab="Accr")
 
 
+data = read.table("../results/09-27-2015/res.txt")
+par(mfrow = c(1, 2))
+plot(1:nrow(data), data[,3], pch=19, cex=0.4, ylab="", xlab="")
+points(1:nrow(data), data[,5], pch=18, col="red",cex=0.4)
 
+plot(1:nrow(data), data[,2], pch=19, cex=0.4, ylab="", xlab="")
+points(1:nrow(data), data[,4], pch=18, col="red",cex=0.4)
 
+plot(1:10, data[1:10,2], pch=19)
+points(1:10, data[1:10,4], pch=18)
+
+data = read.table("../results/09-27-2015/res.txt")
 
