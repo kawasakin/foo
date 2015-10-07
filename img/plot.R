@@ -108,14 +108,26 @@ nrow(a[which(a[,1]<4431),])/4431/17
 nrow(a[which(a[,1]>=4431),])/6610/17
 
 ####################
-data = read.table("../results/09-25-2015/res_enh.rep2.txt")
-res = data.frame()
-for(i in 0:24*15+5){
-	res = rbind(res, data[i:(i+10),])
-}
-boxplot(V2~V1, res, outline=FALSE, ylab="Cost")
-boxplot(V3~V1, res, outline=FALSE, ylab="Accr")
+data = read.table("../results/09-25-2015/res_enh.rep1.txt")
+data_random = read.table("../results/09-25-2015/res_enh.random.txt")
 
+res = data.frame()
+res_random = data.frame()
+for(i in 0:49*15+5){
+	res = rbind(res, data[i:(i+10),])
+	res_random = rbind(res_random, data_random[i:(i+10),]) 
+}
+
+res_random = do.call(rbind, lapply(split(res_random, res_random$V1), colMeans))
+res_random[,1] = res_random[,1] + 1
+
+boxplot(V2~V1, res, outline=FALSE, ylab="Cost", ylim=c(0.15, 0.35))
+lines(x = res_random[,1], y = res_random[,2],  col="red")
+points(x = res_random[,1], y = res_random[,2], pch=19, cex=0.3,  col="red")
+
+boxplot(V3~V1, res, outline=FALSE, ylab="Accr", ylim=c(0.86, 0.96))
+lines(x = res_random[,1], y = res_random[,3], col="red")
+points(x = res_random[,1], y = res_random[,3], pch=19, cex=0.3, col="red")
 
 data = read.table("../results/09-27-2015/res.txt")
 par(mfrow = c(1, 2))
