@@ -58,21 +58,29 @@ freq = table(paste(a[,1], a[,2]))
 loops = names(freq[which(freq>=0)])
 a = data.frame(do.call(rbind, strsplit(loops, split=" ")))
 a$freq = freq/num_rep
-write.table(a, file = "a.rep2.txt", append = FALSE, quote = FALSE, sep = "\t",
+write.table(a, file = "loops.rep2.txt", append = FALSE, quote = FALSE, sep = "\t",
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = FALSE, qmethod = c("escape", "double"),
             fileEncoding = "")
 
-rep2 = read.table("a.rep2.txt") 
+rep2 = read.table("loops.rep2.txt") 
 colnames(rep2) = c("p", "e", "prob")
 rep2 = rep2[order(rep2$p),]
 
-rep1 = read.table("a") 
+rep1 = read.table("loops.rep1.txt") 
 colnames(rep1) = c("p", "e", "prob")
 rep1 = rep1[order(rep1$p),]
 
-rep1 = rep1[rep1$prob>0.5,]
-rep2 = rep2[rep2$prob>0.5,]
+rep1 = rep1[which(paste(rep1[,1], rep1[,2]) %in% paste(rep2[,1], rep2[,2])),]
+rep2 = rep2[which(paste(rep2[,1], rep2[,2]) %in% paste(rep1[,1], rep1[,2])),]
+
+plot(rep1$prob, rep2$prob, pch=19, cex=0.4, xlab="rep1", ylab="rep2", col=rgb(0,0,0,alpha=0.3))
+
+rep1 = rep1[rep1$prob>0.8,]
+rep2 = rep2[rep2$prob>0.8,]
+rep1 = rep1[which(paste(rep1[,1], rep1[,2]) %in% paste(rep2[,1], rep2[,2])),]
+rep2 = rep2[which(paste(rep2[,1], rep2[,2]) %in% paste(rep1[,1], rep1[,2])),]
+
 num_overlap = length(which(paste(rep1[,1], rep1[,2]) %in% paste(rep2[,1], rep2[,2])))
 num_overlap/nrow(rep1)
 num_overlap/nrow(rep2)
