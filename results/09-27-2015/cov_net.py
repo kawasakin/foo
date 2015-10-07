@@ -135,4 +135,3 @@ for i in range(1, 400):
           ))
 
 
-np.savetxt("res.txt", np.array(res))
