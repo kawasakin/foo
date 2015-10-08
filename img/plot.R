@@ -36,9 +36,36 @@ boxplot(a, b, c, d)
 # loops
 library(GenomicRanges)
 num_genes = 11041
-data = read.table("../results/09-25-2015/loops_pred.txt")
+data = read.table("../results/09-25-2015/loops_pred.rep1.txt")
 num_rep = nrow(data)/num_genes
 data$id = rep(1:num_genes, num_rep)
+id = c()
+for(i in 1:num_rep){
+	id = c(id, rep(i, num_genes))
+}
+data$id = id
+data.list <- split(data, data$id)
+res = data.frame()
+for(i in 1:length(data.list)){
+	a = data.list[[i]]
+	a1 = data.frame(1:num_genes, a[,1]+1)
+	a2 = data.frame(1:num_genes, a[,2]+1)
+	a3 = data.frame(1:num_genes, a[,3]+1)
+	a4 = data.frame(1:num_genes, a[,4]+1)
+
+	a1 = a1[which(a1[,2]>0),]
+	a2 = a2[which(a2[,2]>0),]
+	a3 = a3[which(a3[,2]>0),]
+	a4 = a4[which(a4[,2]>0),]
+
+	colnames(a1) = colnames(a2) = colnames(a3) = colnames(a4) = c("id", "e")
+	a = rbind(a1, a2, a3, a4)
+	colnames(a) = c("p", "e")
+	a = a[order(a$p),]
+	res = rbind(res, c(nrow(a[which(a$p<=4431),])/4431, nrow(a[which(a$p>4431),])/6610))
+}
+colnames(res) = c("silent", "active")
+boxplot(res)
 
 a1 = data.frame(data$id, data[,1]+1)
 a2 = data.frame(data$id, data[,2]+1)
@@ -141,4 +168,14 @@ plot(1:10, data[1:10,2], pch=19)
 points(1:10, data[1:10,4], pch=18)
 
 data = read.table("../results/09-27-2015/res.txt")
+
+
+num_genes = 11041
+data = read.table("../results/09-25-2015/matches_distance.txt")
+freq = data.frame(table(data[,1]))
+freq2 = data.frame(Var1=0:(num_genes-1), Freq=0)
+freq2$Freq[match(freq$Var1, freq2$Var1)] = freq$Freq
+freq2$group = c(rep("silence", 4431), rep("active",6610))
+boxplot(Freq~group, freq2, outline=FALSE)
+
 
