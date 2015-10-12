@@ -18,7 +18,7 @@ get_gene_enhancer_match <- function(genes, loops, enhancers){
 }
 
 file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_3k_promoter.bed"
-file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_100k_flanking.bed"
+file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_300k_flanking.bed"
 file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancers.2K.bed"
 file_loop = "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/CHIC/ESC_promoter_other_significant_interactions.txt"
 

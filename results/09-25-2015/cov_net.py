@@ -99,36 +99,85 @@ def learning(l_X, trY, iter, epchs, mini_batch_size):
     return final
 
 def all_subsets(ss, num):
-    return chain(*map(lambda x: combinations(ss, x), range(num+1)))
+    return chain(*map(lambda x: combinations(ss, x), xrange(num+1)))
 
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
-# super slow 
-def update_X(matches, max_enhancer_num, dat_X_P, dat_X_E, dat_Y):
-    res = []
-    res_enh = []
-    for i in xrange(dat_X_P.shape[0]):
-        p = dat_X_P[i]
-        if i in matches:
-            tmp = all_subsets(matches[i], max_enhancer_num)
-            enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
-            enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
-            pp = dat_X_P[[i]*len(enhancer_index)]
-            ee = np.array(map(lambda x: np.dstack(dat_X_E[x]), enhancer_index))
-            tmp = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
-            preds = predict(tmp)
-            costs = cross_entropy(preds[:,1], dat_Y[[i]*len(enhancer_index), 1])
-            res_tmp = tmp[np.argmin(costs)]
-            res_enh.append(enhancer_index[np.argmin(costs)])
-        else:
-            enhancer_index = [-1]*max_enhancer_num
-            ee = np.array(map(lambda x: np.dstack(dat_X_E[x]), [enhancer_index]))[0]
-            res_tmp = np.dstack((p, ee))
-            res_enh.append(enhancer_index)            
-        res.append(res_tmp)
+def update_X(matches, enhancer_num, P, E, Y):
+    res = [update(P[i].reshape(1,1,17,-1), E[matches_dist[i]], matches_dist[i], max_enhancer_num, Y[i]) for i in xrange(P.shape[0])]
     gc.collect()
-    return (np.array(res), np.array(res_enh))
+
+def update(p, e, matches, max_enhancer_num, y, k):
+    print k
+    e = np.vstack((e, np.zeros((17*19)).reshape(1, 1, 17, -1)))     
+    match_index = range(len(matches))
+    matches = np.array(matches + [-1])
+    if len(match_index) != 0:
+        tmp = all_subsets(match_index, max_enhancer_num)
+        enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
+        enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+        pp = p[[0]*len(enhancer_index)]
+        ee = np.array(map(lambda x: np.dstack(e[x]), enhancer_index))
+        tmp = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
+        preds = predict(tmp)
+        costs = cross_entropy(preds[:,1], y[[1]*len(enhancer_index)])
+        res_X = tmp[np.argmin(costs)]
+        res_E = matches[enhancer_index[np.argmin(costs)]]
+        del tmp
+        del enhancer_index
+        del pp
+        del ee
+        del preds
+        del costs
+        gc.collect()
+    else:
+        enhancer_index = [-1]*max_enhancer_num
+        ee = np.array(map(lambda x: np.dstack(e[x]), [enhancer_index]))[0]
+        res_X = np.dstack((p[0], ee))
+        res_E = enhancer_index
+        del enhancer_index
+        del ee
+        gc.collect()
+    gc.collect()
+    return (res_X, res_E)
+
+
+## super slow 
+#def update_X(matches, enhancer_num, P, E, Y):
+#    res = []
+#    res_enh = []
+#    for i in xrange(P.shape[0]):
+#        print i
+#        p = P[i]
+#        if i in matches:
+#            tmp = all_subsets(matches[i], max_enhancer_num)
+#            enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
+#            enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+#            pp = dat_X_P[[i]*len(enhancer_index)]
+#            ee = np.array(map(lambda x: np.dstack(dat_X_E[x]), enhancer_index))
+#            tmp = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
+#            preds = predict(tmp)
+#            costs = cross_entropy(preds[:,1], dat_Y[[i]*len(enhancer_index), 1])
+#            res_tmp = tmp[np.argmin(costs)]
+#            res_enh.append(enhancer_index[np.argmin(costs)])
+#            del pp
+#            del ee
+#            del enhancer_index
+#            del costs
+#            del tmp
+#            gc.collect()
+#        else:
+#            enhancer_index = [-1]*max_enhancer_num
+#            ee = np.array(map(lambda x: np.dstack(dat_X_E[x]), [enhancer_index]))[0]
+#            res_tmp = np.dstack((p, ee))
+#            res_enh.append(enhancer_index) 
+#            del  enhancer_index
+#            del  ee
+#        res.append(res_tmp)
+#        del res_tmp
+#        gc.collect()
+#    #return (np.array(res), np.array(res_enh))
 
 # defining all the parameters
 num_class = 2           # number of output
@@ -168,11 +217,13 @@ dat_Y = gen_target("datY.dat", 2)               # target
 matches_dist = gen_matches("matches_distance.txt")
 
 # add one more fake enhancer (all 0s) to the end of dat_X_E
-e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
-dat_X_E = np.vstack((dat_X_E, e)) 
+#e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
+#dat_X_E = np.vstack((dat_X_E, e)) 
 
 # model 0 that based only on promoters
 res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
+
+tmp = [update(dat_X_P[i].reshape(1,1,17,-1), dat_X_E[matches_dist[i]], matches_dist[i], max_enhancer_num, dat_Y[i], i) for i in xrange(dat_X_P.shape[0])]
 
 # update trX
 enhancers = []
