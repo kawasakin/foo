@@ -32,7 +32,14 @@ intersectBed -u -wa -a - -b gene_300k_flanking.bed | sort - | uniq - > enhancers
 # 4. extract the enhancer-promoter matches
 extract_match.R 
 
-# 4. bin the region and extract features
+# 5. bin the region and extract features
 # /opt/R/bin/Rscript extract_feats.R
 
+# 6. predict the loops
 # cov_net.py
+
+# 7. extract loops from raw data
+extract_loops.R 
+
+Sox2 = 10952
+
