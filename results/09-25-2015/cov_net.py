@@ -13,6 +13,8 @@ from itertools import chain, combinations
 from random import shuffle
 import gc
 from collections import Counter
+from math import sqrt
+from joblib import Parallel, delayed
 
 srng = RandomStreams()
 
@@ -104,8 +106,8 @@ def all_subsets(ss, num):
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
-def update_X(matches, enhancer_num, P, E, Y):
-    res = [update(P[i].reshape(1,1,17,-1), E[matches_dist[i]], matches[i], max_enhancer_num, Y[i], i) for i in range(P.shape[0])]
+def update_X(matches, enhancer_num, P, E, Y, n_jobs):
+    res = Parallel(n_jobs=n_jobs)(delayed(update)(P[i].reshape(1,1,17,-1), E[matches[i]], matches[i], enhancer_num, Y[i], i) for i in range(P.shape[0]))    
     aa = []
     bb = []
     for (a, b) in res:
@@ -125,6 +127,7 @@ def update(p, e, matches, max_enhancer_num, y, k):
         tmp = all_subsets(match_index, max_enhancer_num)
         enhancer_index = [list(subset) + [-1]*(max_enhancer_num - len(subset)) for subset in tmp]
         enhancer_index = [sorted(x, key=lambda k: random.random()) for x in enhancer_index]
+        matches = np.append(matches, -1)
         pp = p[[0]*len(enhancer_index)]
         ee = np.array(list(map(lambda x: np.dstack(e[x]), enhancer_index)))
         tmp = np.dstack((pp.reshape(-1, 17, pp.shape[3]), ee.reshape(-1, 17, ee.shape[3]))).reshape(pp.shape[0], 1, 17, -1)
@@ -166,6 +169,7 @@ chip_motif_len = 6      # length of motif matrix
 chip_motif_num = 50     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
 max_enhancer_num = 2    # max number of enhancers included for each promoter
+n_jobs = 15
 
 max_pool_shape = (1, 5000000) # max pool maxtrix size
 
@@ -189,22 +193,13 @@ dat_X_E = gen_chip_feature("datX_E.dat", 19)    # enhancer 2k
 dat_Y = gen_target("datY.dat", 2)               # target 
 matches_dist = gen_matches("matches_distance.txt")
 
-# add one more fake enhancer (all 0s) to the end of dat_X_E
-#e = np.zeros((17*19)).reshape(1, 1, 17, -1)  
-#dat_X_E = np.vstack((dat_X_E, e)) 
-
 # model 0 that based only on promoters
 res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 
-#tmp = [update(dat_X_P[i].reshape(1,1,17,-1), dat_X_E[matches_dist[i]], matches_dist[i], max_enhancer_num, dat_Y[i], i) for i in range(dat_X_P.shape[0])]
-#tmp = [update(dat_X_P[i].reshape(1,1,17,-1), dat_X_E[matches_dist[i]], matches_dist[i], max_enhancer_num, dat_Y[i], i) for i in range(dat_X_P.shape[0])]
-#tmp = [update(dat_X_P[i].reshape(1,1,17,-1), dat_X_E[matches_dist[i]], matches_dist[i], max_enhancer_num, dat_Y[i], i) for i in range(100)]
-#(trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
-
 # update trX
 enhancers = []
-for i in range(0, 50):
-    (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y)
+for i in range(17, 60):
+    (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
     enhancers.append(enh_tmp)
     # re-initilize all the parameters
@@ -224,12 +219,12 @@ for i in range(0, 50):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 
-np.savetxt("loops_pred.rep2.txt", np.array(enhancers).reshape(-1, 4))
-np.savetxt("res_enh.rep2.txt", np.array(res))
+np.savetxt("loops_pred.300k.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("res_enh.300k.rep1.txt", np.array(res))
 
 # predict against randomly assigned enhancers
 res = []
-for k in range(0, 50):
+for k in range(15, 50):
     trX_update = []
     for i in range(len(dat_X_P)):
         p = dat_X_P[i]    
