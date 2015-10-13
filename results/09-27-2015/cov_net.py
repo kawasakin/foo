@@ -72,6 +72,11 @@ def model(X, w1, w2, w3, Max_Pooling_Shape, p_drop_conv, p_drop_hidden):
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
+def kld(m):    
+    a = m/floatX(np.random.randn(*m.shape) * 0.01)
+    
+    
+
 num_class = 2           # number of output
 p_drop_conv = 0.3       # dropout rate for cov_layer
 p_drop_hidden = 0.5     # dropout rate for hidden_layer
@@ -82,8 +87,8 @@ epchs = 15              # number of iteration
 
 feat_num = 17           # number of chip features
 chip_motif_len = 6      # length of motif matrix
-chip_motif_num = 50     # number of motifs 
-hidden_unit_num = 100   # number of hidden units
+chip_motif_num = 10     # number of motifs 
+hidden_unit_num = 20   # number of hidden units
 max_enhancer_num = 4    # max number of enhancers included for each promoter
 
 max_pool_shape = (1, 5000000) # max pool maxtrix size
@@ -120,8 +125,7 @@ predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
 res = []
 index = np.array(range(trX.shape[0]))
-for i in range(1, 400):
-    print i
+for i in range(0, 400):
     np.random.shuffle(index)
     for start, end in zip(range(0, len(trX), mini_batch_size), range(mini_batch_size, len(trX), mini_batch_size)):
         cost = train(trX[index][start:end], trY[index][start:end])
@@ -133,5 +137,6 @@ for i in range(1, 400):
           np.mean(cross_entropy(pred_te, teY)), \
           np.mean(np.argmax(teY, axis=1) == np.argmax(pred_te, axis=1))
           ))
+    print res[i]
 
 
