@@ -9,7 +9,7 @@
 #PBS -m ae
 #PBS -A ren-group
 
-### qsub -I -q hotel -N cov_net -l nodes=15:ppn=3 -l walltime=100:00:00 -A ren-group 
+### qsub -I -q hotel -N cov_net -l nodes=20:ppn=3 -l walltime=100:00:00 -A ren-group 
 ### qsub -I -q pdafm -N cov_net -l nodes=32:ppn=3 -l walltime=72:00:00 -A ren-group 
 
 ### qsub -I -q gpu-hotel -N ConvNet-GPU -l nodes=1:ppn=3 -l walltime=100:00:00 -A ren-group
