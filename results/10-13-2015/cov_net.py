@@ -168,7 +168,7 @@ feat_num = 17           # number of chip features
 chip_motif_len = 6      # length of motif matrix
 chip_motif_num = 50     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
-max_enhancer_num = 2    # max number of enhancers included for each promoter
+max_enhancer_num = 3    # max number of enhancers included for each promoter
 n_jobs = 15
 
 max_pool_shape = (1, 5000000) # max pool maxtrix size
@@ -198,7 +198,7 @@ res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 
 # update trX
 enhancers = []
-for i in range(17, 60):
+for i in range(0, 60):
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
     enhancers.append(enh_tmp)
@@ -219,8 +219,8 @@ for i in range(17, 60):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 
-np.savetxt("loops_pred.300k.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
-np.savetxt("res_enh.300k.rep1.txt", np.array(res))
+np.savetxt("loops_pred.300k.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("res_enh.300k.raw.rep1.txt", np.array(res))
 
 # predict against randomly assigned enhancers
 res = []
