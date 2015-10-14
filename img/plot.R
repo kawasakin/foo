@@ -36,7 +36,7 @@ boxplot(a, b, c, d)
 # loops
 library(GenomicRanges)
 num_genes = 11041
-data = read.table("../results/09-25-2015/loops_pred.rep1.txt")
+data = read.table("../results/09-25-2015/loops_pred.300k.raw.rep1.txt")
 num_rep = nrow(data)/num_genes
 data$id = rep(1:num_genes, num_rep)
 id = c()
@@ -50,16 +50,20 @@ for(i in 1:length(data.list)){
 	a = data.list[[i]]
 	a1 = data.frame(1:num_genes, a[,1]+1)
 	a2 = data.frame(1:num_genes, a[,2]+1)
-	a3 = data.frame(1:num_genes, a[,3]+1)
-	a4 = data.frame(1:num_genes, a[,4]+1)
+#	a3 = data.frame(1:num_genes, a[,3]+1)
+#	a4 = data.frame(1:num_genes, a[,4]+1)
 
 	a1 = a1[which(a1[,2]>0),]
 	a2 = a2[which(a2[,2]>0),]
-	a3 = a3[which(a3[,2]>0),]
-	a4 = a4[which(a4[,2]>0),]
+#	a3 = a3[which(a3[,2]>0),]
+#	a4 = a4[which(a4[,2]>0),]
 
-	colnames(a1) = colnames(a2) = colnames(a3) = colnames(a4) = c("id", "e")
-	a = rbind(a1, a2, a3, a4)
+#	colnames(a1) = colnames(a2) = colnames(a3) = colnames(a4) = c("id", "e")
+	colnames(a1) = colnames(a2) = c("id", "e")
+
+#	a = rbind(a1, a2, a3, a4)
+	a = rbind(a1, a2)
+
 	colnames(a) = c("p", "e")
 	a = a[order(a$p),]
 	res = rbind(res, c(nrow(a[which(a$p<=4431),])/4431, nrow(a[which(a$p>4431),])/6610))
