@@ -198,7 +198,7 @@ res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 
 # update trX
 enhancers = []
-for i in range(42, 60):
+for i in range(51, 60):
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
     enhancers.append(enh_tmp)
