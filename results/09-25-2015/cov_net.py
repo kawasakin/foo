@@ -219,7 +219,7 @@ for i in range(51, 60):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 
-np.savetxt("loops_pred.300k.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("loops.300k.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
 np.savetxt("res_enh.300k.rep1.txt", np.array(res))
 
 # predict against randomly assigned enhancers
