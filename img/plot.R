@@ -36,7 +36,7 @@ boxplot(a, b, c, d)
 # loops
 library(GenomicRanges)
 num_genes = 11041
-data = read.table("../results/09-25-2015/loops_pred.300k.raw.rep1.txt")
+data = read.table("../results/10-13-2015/")
 num_rep = nrow(data)/num_genes
 data$id = rep(1:num_genes, num_rep)
 id = c()
