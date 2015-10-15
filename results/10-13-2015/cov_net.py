@@ -106,6 +106,26 @@ def all_subsets(ss, num):
 def cross_entropy(a, y):
     return np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a))
 
+def update_X_random(P, E, matches_dist, max_enhancer_num):
+    trX_update = []
+    for i in range(len(P)):
+        p = P[i]    
+        if i in matches_dist:
+            if(len(matches_dist[i])>max_enhancer_num):
+                enhancer_index = random.sample(matches_dist[i], max_enhancer_num)
+            else:
+                enhancer_index = matches_dist[i] + [-1]*(max_enhancer_num - len(matches_dist[i]))
+            shuffle(enhancer_index)
+            e = np.dstack(E[enhancer_index])
+            p = np.dstack((p, e))
+        else: # no nehancers
+            enhancer_index = max_enhancer_num*[-1]
+            e = np.dstack(E[enhancer_index])
+            p = np.dstack((p, e)) 
+        trX_update.append(p)
+    trX_update = np.array(trX_update)  
+    return trX_update
+    
 def update_X(matches, enhancer_num, P, E, Y, n_jobs):
     res = Parallel(n_jobs=n_jobs)(delayed(update)(P[i].reshape(1,1,17,-1), E[matches[i]], matches[i], enhancer_num, Y[i], i) for i in range(P.shape[0]))    
     aa = []
@@ -195,10 +215,11 @@ matches_dist = gen_matches("matches_distance.txt")
 
 # model 0 that based only on promoters
 res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
-
+res_random = res
 # update trX
 enhancers = []
-for i in range(29, 60):
+for i in range(51, 70):
+    # postive prediction
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
     enhancers.append(enh_tmp)
@@ -218,31 +239,14 @@ for i in range(29, 60):
     # now predict
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
-
+    
+        
 np.savetxt("loops.300K.3E.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
 np.savetxt("res_enh.300k.3E.rep1.txt", np.array(res))
 
-# predict against randomly assigned enhancers
-res = []
-for k in range(29, 50):
-    trX_update = []
-    for i in range(len(dat_X_P)):
-        p = dat_X_P[i]    
-        if i in matches_dist:
-            if(len(matches_dist[i])>max_enhancer_num):
-                enhancer_index = random.sample(matches_dist[i], max_enhancer_num)
-            else:
-                enhancer_index = matches_dist[i] + [-1]*(max_enhancer_num - len(matches_dist[i]))
-            shuffle(enhancer_index)
-            e = np.dstack(dat_X_E[enhancer_index])
-            p = np.dstack((p, e))
-        else: # no nehancers
-            enhancer_index = max_enhancer_num*[-1]
-            e = np.dstack(dat_X_E[enhancer_index])
-            p = np.dstack((p, e)) 
-        trX_update.append(p)
-    trX_update = np.array(trX_update)    
-    # re-initilize all the parameters
+
+    # random control
+    trX_update_random = update_X_random(dat_X_P, dat_X_E, matches_dist, max_enhancer_num)
     X = T.ftensor4()
     Y = T.fmatrix()
     w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
@@ -255,7 +259,6 @@ for k in range(29, 50):
     updates = RMSprop(cost, params, lr)
     train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
     predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
-    # now predict
-    res += learning(trX_update, dat_Y, k, epchs, mini_batch_size)
+    res_random += learning(trX_update_random, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
-np.savetxt("res_enh.random.txt", np.array(res))
+np.savetxt("res_enh.300k.3E.random.txt", np.array(res_random))
