@@ -1,38 +1,54 @@
 library(GenomicRanges)
-num_genes = 11041
-data = read.table("loops.300K.3E.raw.rep1.txt")
-num_rep = nrow(data)/num_genes
-data$id = rep(1:num_genes, num_rep)
-a1 = data.frame(data$id, data[,1]+1)
-a2 = data.frame(data$id, data[,2]+1)
-a3 = data.frame(data$id, data[,3]+1)
+library(parallel)
 
-a1 = a1[which(a1[,2]>0),]
-a2 = a2[which(a2[,2]>0),]
-a3 = a3[which(a3[,2]>0),]
+get_gene_enhancer_match <- function(genes, loops, enhancers){
+	genes.gr <- with(genes, GRanges(chr, IRanges(start+1, end), strand="*", index))
+	loops.promoter.gr <- with(loops, GRanges(chr.bait, IRanges(start.bait+1, end.bait), strand="*", index))
+	loops.enhancer.gr <- with(loops, GRanges(chr, IRanges(start+1, end), strand="*", index))
+	enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start+1, end), strand="*", index))
 
-colnames(a1) = colnames(a2) = colnames(a3) = c("id", "e")
-a = rbind(a1, a2, a3)
-colnames(a) = c("p", "e")
-a = a[order(a$p),]
-freq = data.frame(table(paste(a[,1], a[,2])))
-freq$Freq = freq$Freq/num_rep
+	ov1 <- findOverlaps(genes.gr, loops.promoter.gr)
+	ov2 <- findOverlaps(loops.promoter.gr, enhancers.gr)
 
-write.table(freq, file = "loops.300K.3E.rep1.txt", append = FALSE, quote = FALSE, sep = "\t",
-            eol = "\n", na = "NA", dec = ".", row.names = FALSE,
-            col.names = FALSE, qmethod = c("escape", "double"),
-            fileEncoding = "")
+	matches <- ov2@subjectHits[match(ov1@subjectHits, ov2@queryHits)]
+	matches[which(is.na(matches))] = 0 
+	matches <- unique(data.frame(promoters = ov1@queryHits, enhancers=matches))
+	matches <- matches[which(matches$enhancers>0),]
+	return(matches)
+}
 
-loops = read.table("loops.300K.3E.rep1.txt")
-loops = loops[order(loops[,1]),]
-genes = read.table("genes.txt")
-genes = genes[,c(1,3,4,5,6,9,10)]
-enhancers = read.table("enhancers.2K.bed")
-targets = cbind(genes[loops[,1],], enhancers[loops[,2],], loops)
+file_promoter="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_3k_promoter.bed"
+file_flanking="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/gene_300k_flanking.bed"
+file_enhancer="/oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015/enhancers.2K.bed"
+file_loop = "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/CHIC/ESC_promoter_other_significant_interactions.txt"
 
-colnames(targets) = c("gname", "gchr", "gstart", "gend", "FPRM", "strand", "glabel", "echr", "estart", "eend", "gid", "eid", "prob")
-write.table(targets, file = "loops.300K.3E.rep1.txt", append = FALSE, quote = FALSE, sep = "\t",
-            eol = "\n", na = "NA", dec = ".", row.names = FALSE,
-            col.names = FALSE, qmethod = c("escape", "double"),
-            fileEncoding = "")
+promoters = read.table(file_promoter)
+flankings = read.table(file_flanking)
+enhancers = read.table(file_enhancer)
+loops     = read.table(file_loop, sep="\t", head=T)
 
+colnames(promoters) = c("chr", "start", "end", "FPRM", "strand", "group")
+colnames(flankings) = c("chr", "start", "end", "FPRM", "strand", "group")
+colnames(enhancers) = c("chr", "start", "end")
+loops = loops[,match(c("chr.bait", "start.bait", "end.bait", "chr", "start", "end"), colnames(loops))]
+loops$index = 1:nrow(loops)
+enhancers$index = 1:nrow(enhancers)
+promoters$index = 1:nrow(promoters)
+enhancers$strand = "+"
+
+promoters.gr <- with(promoters, GRanges(chr, IRanges(start, end), strand="*"))
+flankings.gr <- with(flankings, GRanges(chr, IRanges(start, end), strand="*"))
+enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start, end), strand="*"))
+
+ov <- findOverlaps(flankings.gr, enhancers.gr)
+matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
+matches = matches[order(matches[,1]),]
+write.table(matches-1, file = "matches_distance.txt", append = FALSE, quote = FALSE, sep = "\t",
+eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+fileEncoding = "")
+
+matches <- get_gene_enhancer_match(promoters, loops, enhancers)
+matches = matches[order(matches[,1]),]
+write.table(matches, file = "loops_HiC.txt", append = FALSE, quote = FALSE, sep = "\t",
+eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+fileEncoding = "")
