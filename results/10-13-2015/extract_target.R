@@ -19,3 +19,5 @@ write.table(freq, file = "loops_pred.300K.3E.rep1.txt", append = FALSE, quote = 
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = FALSE, qmethod = c("escape", "double"),
             fileEncoding = "")
+
+pair = read.table("loops.300K.3E.rep1.txt")

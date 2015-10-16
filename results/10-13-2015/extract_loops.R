@@ -8,8 +8,7 @@ get_gene_enhancer_match <- function(genes, loops, enhancers){
 	enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start+1, end), strand="*", index))
 
 	ov1 <- findOverlaps(genes.gr, loops.promoter.gr)
-	ov2 <- findOverlaps(loops.promoter.gr, enhancers.gr)
-	
+	ov2 <- findOverlaps(loops.enhancer.gr, enhancers.gr)
 	
 	matches_enhancers <- ov2@subjectHits[match(ov1@subjectHits, ov2@queryHits)]
 	matches_loops <- ov2@queryHits[match(ov1@subjectHits, ov2@queryHits)]
@@ -45,15 +44,17 @@ promoters.gr <- with(promoters, GRanges(chr, IRanges(start, end), strand="*"))
 flankings.gr <- with(flankings, GRanges(chr, IRanges(start, end), strand="*"))
 enhancers.gr <- with(enhancers, GRanges(chr, IRanges(start, end), strand="*"))
 
-ov <- findOverlaps(flankings.gr, enhancers.gr)
-matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
-matches = matches[order(matches[,1]),]
-write.table(matches-1, file = "matches_distance.txt", append = FALSE, quote = FALSE, sep = "\t",
-eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
-fileEncoding = "")
+#ov <- findOverlaps(flankings.gr, enhancers.gr)
+#matches <- data.frame(promoter=ov@queryHits, enhancer=ov@subjectHits)
+#matches = matches[order(matches[,1]),]
+#write.table(matches-1, file = "matches_distance.txt", append = FALSE, quote = FALSE, sep = "\t",
+#eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
+#fileEncoding = "")
 
 matches <- get_gene_enhancer_match(promoters, loops, enhancers)
 matches = matches[order(matches[,1]),]
-write.table(matches, file = "loops_HiC.txt", append = FALSE, quote = FALSE, sep = "\t",
+res <- cbind(promoters[matches$promoters,], enhancers[matches$enhancers,], loops[matches$loops, c(10, 11)])
+
+write.table(res, file = "loops_HiC.txt", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
 fileEncoding = "")
