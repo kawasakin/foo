@@ -9,10 +9,15 @@ get_gene_enhancer_match <- function(genes, loops, enhancers){
 
 	ov1 <- findOverlaps(genes.gr, loops.promoter.gr)
 	ov2 <- findOverlaps(loops.promoter.gr, enhancers.gr)
-
-	matches <- ov2@subjectHits[match(ov1@subjectHits, ov2@queryHits)]
-	matches[which(is.na(matches))] = 0 
-	matches <- unique(data.frame(promoters = ov1@queryHits, enhancers=matches))
+	
+	
+	matches_enhancers <- ov2@subjectHits[match(ov1@subjectHits, ov2@queryHits)]
+	matches_loops <- ov2@queryHits[match(ov1@subjectHits, ov2@queryHits)]
+	
+	matches_enhancers[which(is.na(matches_enhancers))] = 0
+	matches_loops[which(is.na(matches_loops))] = 0
+	
+	matches <- unique(data.frame(promoters = ov1@queryHits, enhancers=matches_enhancers, loops = matches_loops))
 	matches <- matches[which(matches$enhancers>0),]
 	return(matches)
 }
@@ -30,7 +35,7 @@ loops     = read.table(file_loop, sep="\t", head=T)
 colnames(promoters) = c("chr", "start", "end", "FPRM", "strand", "group")
 colnames(flankings) = c("chr", "start", "end", "FPRM", "strand", "group")
 colnames(enhancers) = c("chr", "start", "end")
-loops = loops[,match(c("chr.bait", "start.bait", "end.bait", "chr", "start", "end"), colnames(loops))]
+#loops = loops[,match(c("chr.bait", "start.bait", "end.bait", "chr", "start", "end"), colnames(loops))]
 loops$index = 1:nrow(loops)
 enhancers$index = 1:nrow(enhancers)
 promoters$index = 1:nrow(promoters)
