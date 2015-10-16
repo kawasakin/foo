@@ -262,3 +262,8 @@ for i in range(1, 59):
     res_random += learning(trX_update_random, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 np.savetxt("res_enh.300k.3E.random.txt", np.array(res_random))
+
+
+
+
+
