@@ -218,7 +218,7 @@ res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
 res_random = res
 # update trX
 enhancers = []
-for i in range(51, 70):
+for i in range(49, 70):
     # postive prediction
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
@@ -239,10 +239,9 @@ for i in range(51, 70):
     # now predict
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
-    
-        
-np.savetxt("loops.300K.3E.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
-np.savetxt("res_enh.300k.3E.rep1.txt", np.array(res))
+            
+np.savetxt("loops.300K.3E.raw.rep2.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("res_enh.300k.3E.rep2.txt", np.array(res))
 
 for i in range(1, 59):
     # random control
