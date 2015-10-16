@@ -244,7 +244,7 @@ for i in range(51, 70):
 np.savetxt("loops.300K.3E.raw.rep1.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
 np.savetxt("res_enh.300k.3E.rep1.txt", np.array(res))
 
-
+for i in range(1, 59):
     # random control
     trX_update_random = update_X_random(dat_X_P, dat_X_E, matches_dist, max_enhancer_num)
     X = T.ftensor4()
