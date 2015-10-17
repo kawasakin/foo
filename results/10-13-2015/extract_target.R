@@ -21,3 +21,15 @@ write.table(freq, file = "loops.300K.3E.rep1.txt", append = FALSE, quote = FALSE
             eol = "\n", na = "NA", dec = ".", row.names = FALSE,
             col.names = FALSE, qmethod = c("escape", "double"),
             fileEncoding = "")
+
+pairs = read.table("loops.300K.3E.rep2.txt")
+genes = read.table("genes.txt")
+enhancers = read.table("enhancers.2K.bed")
+res = data.frame(genes[pairs[,1],], enhancers[pairs[,2],], pairs)
+res = res[order(res[,6]),]
+write.table(res, file = "loops.300K.3E.rep2.txt", append = FALSE, quote = FALSE, sep = "\t",
+            eol = "\n", na = "NA", dec = ".", row.names = FALSE,
+            col.names = FALSE, qmethod = c("escape", "double"),
+            fileEncoding = "")
+
+
