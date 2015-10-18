@@ -186,7 +186,7 @@ chip_motif_len = 6      # length of motif matrix
 chip_motif_num = 50     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
 max_enhancer_num = 3    # max number of enhancers included for each promoter
-n_jobs = 30
+n_jobs = 48
 
 max_pool_shape = (1, 5000000) # max pool maxtrix size
 
@@ -240,8 +240,8 @@ for i in range(1, 60):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
             
-np.savetxt("loops.300K.3E.raw.rep3.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
-np.savetxt("res_enh.300k.3E.rep3.txt", np.array(res))
+np.savetxt("loops.300K.3E.raw.rep4.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("res_enh.300k.3E.rep4.txt", np.array(res))
 
 for i in range(1, 59):
     # random control
