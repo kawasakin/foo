@@ -178,12 +178,12 @@ def update(p, e, matches, max_enhancer_num, y, k):
 num_class = 2           # number of output
 p_drop_conv = 0.3       # dropout rate for cov_layer
 p_drop_hidden = 0.5     # dropout rate for hidden_layer
-mini_batch_size = 50    # [40 - 100]
+mini_batch_size = 100    # [40 - 100]
 lr = 0.001              # learning rate
 epchs = 15              # number of iteration
 feat_num = 17           # number of chip features
 chip_motif_len = 6      # length of motif matrix
-chip_motif_num = 50     # number of motifs 
+chip_motif_num = 30     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
 max_enhancer_num = 3    # max number of enhancers included for each promoter
 n_jobs = 1
@@ -204,16 +204,49 @@ train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_inpu
 predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
 
 # load input
-dat_X_P = gen_chip_feature("../10-13-2015/datX_P.dat", 29)    # promoter 3k
-dat_X_E = gen_chip_feature("../10-13-2015/datX_E.dat", 19)    # enhancer 2k
-dat_Y = gen_target("../10-13-2015/datY.dat", 2)               # target 
-matches_dist = gen_matches("../10-13-2015/matches_distance.txt")
-
-# start from a random set
-#trX_update_random = update_X_random(dat_X_P, dat_X_E, matches_dist, max_enhancer_num)
+dat_X_P = gen_chip_feature("datX_P.dat", 100)    # promoter 5k
+dat_Y = gen_target("datY.dat", 2)               # target 
 
 # model 0 that based only on promoters
-# res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
+res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
+
+
+l1_pool_feat = T.flatten(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), max_pool_shape), outdim=2)
+l1_pool_feat_cal = theano.function(inputs=[X], outputs=l1_pool_feat, allow_input_downcast=True)
+feats = l1_pool_feat_cal(dat_X_P)
+
+np.savetxt("tmp.txt", feats)
+# R
+data = read.table("tmp.txt")
+AUC <- function(pos.scores, neg.scores){
+    res = c()
+    for(i in 1:100){
+        res = c(res, mean(sample(pos.scores,1000,replace=T) > sample(neg.scores,1000,replace=T)))         
+    }
+    return(mean(res))
+}
+orders = order(sapply(1:ncol(data), function(i) AUC(data[4431:nrow(data),i], data[1:4431,i])))
+orders = data.frame(a = orders, b = 0:(length(orders)-1))
+orders[order(orders$a),2]
+# R-end
+
+feat_order = \
+[14,  4,  9, 11, 25, 28,
+  5,  3, 21,  0, 20,  8,
+  7, 16, 18, 17, 29, 27, 
+ 19, 12, 10, 15,  1, 22, 
+ 13, 24,  2, 23,  6, 26]
+
+
+w1.get_value()[14]
+l1_cov2d = rectify(conv2d(X, w1, border_mode='valid'))
+l1_cov2d_cal = theano.function(inputs=[X], outputs=l1_cov2d, allow_input_downcast=True)
+feats = l1_cov2d_cal(dat_X_P)
+
+feats[:, 14, 0, :]
+np.savetxt("feat1_heatmap.txt", feats[:, 14, 0, :])
+
+
 final = []
 l_X = dat_X_P
 trY = dat_Y

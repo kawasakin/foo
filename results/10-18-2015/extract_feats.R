@@ -47,7 +47,7 @@ colnames(enhancers) = c("chr", "start", "end")
 enhancers$strand = "+"
 
 bins.promoters <- bin_regions(promoters, region_len = 5000, bin_size=50)
-bins.enhancers <- bin_regions(enhancers, region_len = 3000, bin_size=50)
+bins.enhancers <- bin_regions(enhancers, region_len = 4000, bin_size=50)
 
 feat.fnames = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/E14_CHD2.bed",
@@ -70,11 +70,11 @@ feat.fnames = c(
 
 feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384",  "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
 
-bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 bin.promoters.feat <- get_bin_feature(bins.promoters, feat.fnames, feat.names)
+bin.enhancers.feat <- get_bin_feature(bins.enhancers, feat.fnames, feat.names)
 
-res.enhancers = do.call(rbind, bin.enhancers.feat)
 res.promoters = do.call(rbind, bin.promoters.feat)
+res.enhancers = do.call(rbind, bin.enhancers.feat)
 
 write.table(res.promoters, file = "datX_P.dat", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
