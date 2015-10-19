@@ -174,22 +174,19 @@ def update(p, e, matches, max_enhancer_num, y, k):
     gc.collect()
     return (res_X, res_E)
     
-
 # defining all the parameters
 num_class = 2           # number of output
 p_drop_conv = 0.3       # dropout rate for cov_layer
 p_drop_hidden = 0.5     # dropout rate for hidden_layer
-
 mini_batch_size = 50    # [40 - 100]
 lr = 0.001              # learning rate
 epchs = 15              # number of iteration
-
 feat_num = 17           # number of chip features
 chip_motif_len = 6      # length of motif matrix
 chip_motif_num = 50     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
 max_enhancer_num = 3    # max number of enhancers included for each promoter
-n_jobs = 15
+n_jobs = 48
 
 max_pool_shape = (1, 5000000) # max pool maxtrix size
 
@@ -213,12 +210,15 @@ dat_X_E = gen_chip_feature("datX_E.dat", 19)    # enhancer 2k
 dat_Y = gen_target("datY.dat", 2)               # target 
 matches_dist = gen_matches("matches_distance.txt")
 
+# start from a random set
+trX_update_random = update_X_random(dat_X_P, dat_X_E, matches_dist, max_enhancer_num)
+
 # model 0 that based only on promoters
-res = learning(dat_X_P, dat_Y, 0, epchs, mini_batch_size)
+res = learning(trX_update_random, dat_Y, 0, epchs, mini_batch_size)
 res_random = res
 # update trX
 enhancers = []
-for i in range(49, 70):
+for i in range(1, 60):
     # postive prediction
     (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
     # append the enhancers
@@ -240,8 +240,8 @@ for i in range(49, 70):
     res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
             
-np.savetxt("loops.300K.3E.raw.rep2.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
-np.savetxt("res_enh.300k.3E.rep2.txt", np.array(res))
+np.savetxt("loops.300K.3E.raw.rep4.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
+np.savetxt("res_enh.300k.3E.rep4.txt", np.array(res))
 
 for i in range(1, 59):
     # random control
