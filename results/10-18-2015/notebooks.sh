@@ -26,7 +26,7 @@ cd /oasis/tscc/scratch/r3fang/github/foo/results/09-25-2015
 /opt/R/bin/Rscript extract_genes.R 200000 200000 flankings.bed 
 
 # 3. extreact enhancers that overlap with flanking regions
-awk '{printf "%s\t%d\t%d\n", $1, $2+1500, $3-1500}' /oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt |\
+awk '{printf "%s\t%d\t%d\n", $1, $2, $3}' /oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC.enhancer.txt |\
 intersectBed -u -wa -a - -b flankings.bed | sort - | uniq - > enhancers.bed 
 
 # 4. extract the enhancer-promoter matches by distance and Hi-C
