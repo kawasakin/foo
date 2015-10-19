@@ -230,24 +230,6 @@ for i in range(epchs):
     final.append((ii, costs, accur))
 gc.collect()
 
-max_pool_shape = (1, 5000000) # max pool maxtrix size
-#l1 = rectify(conv2d(X, w1, border_mode='valid'), )
-l1 = T.flatten(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), max_pool_shape), outdim=2)
-aa = theano.function(inputs=[X], outputs=l1, allow_input_downcast=True)
-a = aa(l_X)
-np.savetxt("tmp.txt", a)
-
-
-l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
-pyx = softmax(T.dot(l2, w3))
-
-
-
-
-
-
-
-
 res_random = res
 # update trX
 enhancers = []
@@ -294,6 +276,48 @@ for i in range(1, 59):
     res_random += learning(trX_update_random, dat_Y, i, epchs, mini_batch_size)
     gc.collect()
 np.savetxt("res_enh.300k.3E.random.txt", np.array(res_random))
+
+
+########################################################################
+########################################################################
+
+max_pool_shape = (1, 5000000) # max pool maxtrix size
+#l1 = rectify(conv2d(X, w1, border_mode='valid'), )
+l1 = T.flatten(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), max_pool_shape), outdim=2)
+l1_conv2d = conv2d(X, w1, border_mode='valid')
+
+aa = theano.function(inputs=[X], outputs=l1, allow_input_downcast=True)
+l1_conv2d_cal = theano.function(inputs=[X], outputs=l1_conv2d, allow_input_downcast=True)
+
+a = aa(l_X)
+np.savetxt("tmp.txt", a)
+
+
+l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
+pyx = softmax(T.dot(l2, w3))
+
+
+feat1 = w1.get_value()[24].reshape(1,1,17,6)
+a = l1_conv2d_cal(l_X)
+aaaa = np.argmax(a.reshape(11041,24), axis=1)
+
+tmp_n = np.zeros((17, 6))
+for i in range(4431):
+    tmp_n = tmp_n + l_X[i].reshape(17, 29)[:,aaaa[i]:(aaaa[i]+6)]
+
+tmp_n = tmp_n/4431
+
+tmp_p = np.zeros((17, 6))
+for i in range(4431, 11041):
+    tmp_p = tmp_p + l_X[i].reshape(17, 29)[:,aaaa[i]:(aaaa[i]+6)]
+
+tmp_p = tmp_p/6610
+tmp_p = np.array(tmp_p)
+np.savetxt("feature1_p.txt", tmp_p)
+np.savetxt("feature1_n.txt", tmp_n)
+
+
+
 
 
 
