@@ -8,13 +8,16 @@ theme_bw()+theme(legend.position="none", axis.title.x=element_blank(),axis.title
 ------------------------------------------------------------------------------------
 # points plot for replicates
 library(ggplot2)
-n = read.table("loops.rep1.sel.txt", head=TRUE)
-rep2 = read.table("loops.rep2.sel.txt", head=TRUE)
+rep1 = read.table("loops.rep3.sel.txt", head=TRUE)
+rep2 = read.table("loops.rep4.sel.txt", head=TRUE)
 
 rep1 = rep1[which(paste(rep1$gid, rep1$eid) %in% paste(rep2$gid, rep2$eid)),]
 rep2 = rep2[which(paste(rep2$gid, rep2$eid) %in% paste(rep1$gid, rep1$eid)),]
-data = data.frame(cbind(rep1=rep1$log.p.value.correct, rep2=rep2$log.p.value.correct))
-m <- ggplot(data[sample(1:nrow(data), 5000),], aes(x = rep1, y= rep2))
+rep1$ee = rep2$log.p.value.correct[match(paste(rep1$gid, rep1$eid, "."), paste(rep2$gid, rep2$eid, "."))]
+
+
+data = data.frame(cbind(rep1=rep1$log.p.value.correct, rep2=rep1$ee))
+m <- ggplot(data[sample(1:nrow(data), 7000),], aes(x = rep1, y= rep2))
 m + geom_point(aes(alpha=0.01, colour="red")) + theme_bw()+
 theme(legend.position="none", axis.title.x=element_blank(),
 axis.title.y=element_blank())
