@@ -242,10 +242,16 @@ w1.get_value()[14]
 l1_cov2d = rectify(conv2d(X, w1, border_mode='valid'))
 l1_cov2d_cal = theano.function(inputs=[X], outputs=l1_cov2d, allow_input_downcast=True)
 feats = l1_cov2d_cal(dat_X_P)
-
-feats[:, 14, 0, :]
 np.savetxt("feat1_heatmap.txt", feats[:, 14, 0, :])
 
+feat1 = np.zeros([17, 6])
+num = 0
+for i in range(dat_X_P.shape[0]):
+    if np.argmax(feats[:, 14, 0, :], axis=1)[i] > 0:
+        feat1 += dat_X_P[i, 0, :, np.argmax(feats[:, 14, 0, :], axis=1)[i]:(np.argmax(feats[:, 14, 0, :], axis=1)[i]+6)]
+        num += 1
+feat1 = feat1/num 
+np.savetxt("motif1.txt")
 
 final = []
 l_X = dat_X_P
