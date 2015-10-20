@@ -183,7 +183,7 @@ lr = 0.001              # learning rate
 epchs = 15              # number of iteration
 feat_num = 17           # number of chip features
 chip_motif_len = 6      # length of motif matrix
-chip_motif_num = 30     # number of motifs 
+chip_motif_num = 10     # number of motifs 
 hidden_unit_num = 100   # number of hidden units
 max_enhancer_num = 3    # max number of enhancers included for each promoter
 n_jobs = 1
@@ -221,144 +221,27 @@ data = read.table("tmp.txt")
 AUC <- function(pos.scores, neg.scores){
     res = c()
     for(i in 1:100){
-        res = c(res, mean(sample(pos.scores,1000,replace=T) > sample(neg.scores,1000,replace=T)))         
+        res = c(res, mean(sample(pos.scores,2000,replace=T) > sample(neg.scores,2000,replace=T)))         
     }
     return(mean(res))
 }
-orders = order(sapply(1:ncol(data), function(i) AUC(data[4431:nrow(data),i], data[1:4431,i])))
-orders = data.frame(a = orders, b = 0:(length(orders)-1))
-orders[order(orders$a),2]
+aucs = sapply(1:ncol(data), function(i) AUC(data[4431:nrow(data),i], data[1:4431,i]))
+orders = order(aucs, decreasing=TRUE) - 1
+aucs[orders+1]
 # R-end
-
 feat_order = \
-[14,  4,  9, 11, 25, 28,
-  5,  3, 21,  0, 20,  8,
-  7, 16, 18, 17, 29, 27, 
- 19, 12, 10, 15,  1, 22, 
- 13, 24,  2, 23,  6, 26]
+[5, 8, 7, 9, 4, 0, 3, 6, 1, 2]
+#[1] 0.929180 0.927285 0.926270 0.920460 0.910855 0.907330 0.896575 0.494940
+#[9] 0.414200 0.413785
 
-
-w1.get_value()[14]
+# get the heatmap
 l1_cov2d = rectify(conv2d(X, w1, border_mode='valid'))
 l1_cov2d_cal = theano.function(inputs=[X], outputs=l1_cov2d, allow_input_downcast=True)
 feats = l1_cov2d_cal(dat_X_P)
-np.savetxt("feat1_heatmap.txt", feats[:, 14, 0, :])
-
-feat1 = np.zeros([17, 6])
-num = 0
-for i in range(dat_X_P.shape[0]):
-    if np.argmax(feats[:, 14, 0, :], axis=1)[i] > 0:
-        feat1 += dat_X_P[i, 0, :, np.argmax(feats[:, 14, 0, :], axis=1)[i]:(np.argmax(feats[:, 14, 0, :], axis=1)[i]+6)]
-        num += 1
-feat1 = feat1/num 
-np.savetxt("motif1.txt")
-
-final = []
-l_X = dat_X_P
-trY = dat_Y
-index = np.array(range(l_X.shape[0]))
-
-for i in range(epchs):
-    random.shuffle(index)
-    for start, end in zip(range(0, len(l_X), mini_batch_size), range(mini_batch_size, len(l_X), mini_batch_size)):
-        cost = train(l_X[index][start:end], trY[index][start:end])
-    preds_tr = predict(l_X)
-    costs = np.mean(cross_entropy(preds_tr, trY))
-    accur = np.mean(np.argmax(trY, axis=1) == np.argmax(preds_tr, axis=1))
-    print(ii, costs, accur)
-    final.append((ii, costs, accur))
-gc.collect()
-
-res_random = res
-# update trX
-enhancers = []
-for i in range(1, 60):
-    # postive prediction
-    (trX_update, enh_tmp) = update_X(matches_dist, max_enhancer_num, dat_X_P, dat_X_E, dat_Y, n_jobs)
-    # append the enhancers
-    enhancers.append(enh_tmp)
-    # re-initilize all the parameters
-    X = T.ftensor4()
-    Y = T.fmatrix()
-    w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-    w2 = init_weights((chip_motif_num, hidden_unit_num))
-    w3 = init_weights((hidden_unit_num, num_class))
-    noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
-    py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
-    cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
-    params = [w1, w2, w3]
-    updates = RMSprop(cost, params, lr)
-    train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-    predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
-    # now predict
-    res += learning(trX_update, dat_Y, i, epchs, mini_batch_size)
-    gc.collect()
-            
-np.savetxt("loops.300K.3E.raw.rep4.txt", np.array(enhancers).reshape(-1, max_enhancer_num))
-np.savetxt("res_enh.300k.3E.rep4.txt", np.array(res))
-
-for i in range(1, 59):
-    # random control
-    trX_update_random = update_X_random(dat_X_P, dat_X_E, matches_dist, max_enhancer_num)
-    X = T.ftensor4()
-    Y = T.fmatrix()
-    w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-    w2 = init_weights((chip_motif_num, hidden_unit_num))
-    w3 = init_weights((hidden_unit_num, num_class))
-    noise_py_x = model(X, w1, w2, w3, max_pool_shape, p_drop_conv, p_drop_hidden)
-    py_x = model(X, w1, w2, w3, max_pool_shape, 0., 0.)
-    cost = T.mean(T.nnet.categorical_crossentropy(noise_py_x, Y))
-    params = [w1, w2, w3]
-    updates = RMSprop(cost, params, lr)
-    train = theano.function(inputs=[X, Y], outputs=cost, updates=updates, allow_input_downcast=True)
-    predict = theano.function(inputs=[X], outputs=py_x, allow_input_downcast=True)
-    res_random += learning(trX_update_random, dat_Y, i, epchs, mini_batch_size)
-    gc.collect()
-np.savetxt("res_enh.300k.3E.random.txt", np.array(res_random))
-
-
-########################################################################
-########################################################################
-
-max_pool_shape = (1, 5000000) # max pool maxtrix size
-#l1 = rectify(conv2d(X, w1, border_mode='valid'), )
-l1 = T.flatten(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), max_pool_shape), outdim=2)
-l1_conv2d = conv2d(X, w1, border_mode='valid')
-
-aa = theano.function(inputs=[X], outputs=l1, allow_input_downcast=True)
-l1_conv2d_cal = theano.function(inputs=[X], outputs=l1_conv2d, allow_input_downcast=True)
-
-a = aa(l_X)
-np.savetxt("tmp.txt", a)
-
-
-l2 = dropout(rectify(T.dot(l1, w2)), p_drop_hidden)
-pyx = softmax(T.dot(l2, w3))
-
-
-feat1 = w1.get_value()[24].reshape(1,1,17,6)
-a = l1_conv2d_cal(l_X)
-aaaa = np.argmax(a.reshape(11041,24), axis=1)
-
-tmp_n = np.zeros((17, 6))
-for i in range(4431):
-    tmp_n = tmp_n + l_X[i].reshape(17, 29)[:,aaaa[i]:(aaaa[i]+6)]
-
-tmp_n = tmp_n/4431
-
-tmp_p = np.zeros((17, 6))
-for i in range(4431, 11041):
-    tmp_p = tmp_p + l_X[i].reshape(17, 29)[:,aaaa[i]:(aaaa[i]+6)]
-
-tmp_p = tmp_p/6610
-tmp_p = np.array(tmp_p)
-np.savetxt("feature1_p.txt", tmp_p)
-np.savetxt("feature1_n.txt", tmp_n)
-
-
-
-
-
-
-
+res = []
+for i in feat_order:
+    res.append(feats[:, i, 0, :])
+np.savetxt("feat_heatmaps.txt", np.array(res).reshape(11041*10, 95))
+# get the motifs
+np.savetxt("weights.txt", w1.get_value()[feat_order].reshape(-1, 6))
 
