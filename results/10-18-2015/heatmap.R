@@ -1,6 +1,6 @@
 # draw heatmap
 data = read.table("feat_heatmaps.txt")
-t = 9
+t = 0
 x = data[(11041*t+1):(11041*(t+1)),]
 xmin = 0
 xmax = 4
@@ -11,7 +11,7 @@ ColorRamp_ex <- ColorRamp[ColorLevels]
 ColorRamp_ex <- ColorRamp[round(1+(min(x)-xmin)*10000/(xmax-xmin)) : round( (max(x)-xmin)*10000/(xmax-xmin) )]
 image(t(as.matrix(x)), col=ColorRamp_ex, las=1, xlab="",ylab="",cex.axis=1,xaxt="n",yaxt="n")
 
-
+# motif patterns
 motifs = read.table("weights.txt")
 t = 9
 x = motifs[(17*t+1):(17*(t+1)),]
@@ -28,3 +28,19 @@ image(t(as.matrix(x)), col=ColorRamp_ex, las=1, xlab="",ylab="",cex.axis=1,xaxt=
 feat.names = c("CHD2", "HCFC1", "MAFK", "NANOG", "POU5F1", "ZC3H11A", "ZNF384",  "H3k09ac", "H3k09me3", "H3k27ac", "H3k27me3", "H3k36me3", "H3k4me1", "H3k4me3", "P300", "CTCF", "POL2")
 rev(feat.names)[orders]
 
+# plot for pol2
+data = read.table("datX_P.dat")
+x = data[17 * (1:11041),]
+image(t(as.matrix(x)), las=1, xlab="",ylab="",cex.axis=1,xaxt="n",yaxt="n")
+
+AUC <- function(pos.scores, neg.scores){
+    res = c()
+    for(i in 1:300){
+        res = c(res, mean(sample(pos.scores,2000,replace=T) > sample(neg.scores,2000,replace=T)))         
+    }
+    return(mean(res))
+}
+
+#xx = apply(x, 1, sum)
+#xx[which(xx>0)] = 1
+#AUC(xx[4431:length(xx)], xx[1:4431])
