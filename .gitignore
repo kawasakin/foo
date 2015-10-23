@@ -5,3 +5,6 @@ presentation.key
 *.mat
 nbt3300-code/data/*
 results/10-18-2015/feat_heatmaps.txt
+results/10-18-2015/datX_E.dat
+results/10-18-2015/*.dat
+results/10-21-2015/feat_heatmaps.txt

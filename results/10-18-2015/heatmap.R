@@ -1,9 +1,9 @@
 # draw heatmap
 data = read.table("feat_heatmaps.txt")
-t = 0
+t = 3
 x = data[(11041*t+1):(11041*(t+1)),]
-xmin = 0
-xmax = 4
+xmin = min(x)
+xmax = max(x)
 collist<-c("#053061","#2166AC","#4393C3","#92C5DE","#D1E5F0","#F7F7F7","#FDDBC7","#F4A582","#D6604D","#B2182B","#67001F")
 ColorRamp<-colorRampPalette(collist)(10000)
 ColorLevels<-seq(from=xmin, to=xmax, length=10000)
@@ -13,7 +13,7 @@ image(t(as.matrix(x)), col=ColorRamp_ex, las=1, xlab="",ylab="",cex.axis=1,xaxt=
 
 # motif patterns
 motifs = read.table("weights.txt")
-t = 9
+t = 0
 x = motifs[(17*t+1):(17*(t+1)),]
 orders = c(1, 16, 8, 3, 10, 17, 6, 13, 14, 11, 15, 2, 4, 9, 12, 5, 7)
 x = x[orders,]

@@ -47,7 +47,7 @@ colnames(enhancers) = c("chr", "start", "end")
 enhancers$strand = "+"
 
 bins.promoters <- bin_regions(promoters, region_len = 5000, bin_size=50)
-bins.enhancers <- bin_regions(enhancers, region_len = 4000, bin_size=50)
+bins.enhancers <- bin_regions(enhancers, region_len = 5000, bin_size=50)
 
 feat.fnames = c(
 "/oasis/tscc/scratch/r3fang/data/Mus_musculus/UCSC/mm9/ENCODE/ChIP-seq/E14_CHD2.bed",
