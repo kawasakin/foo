@@ -58,6 +58,8 @@ res$raw.count[a[,1]] = loops$raw.count[matches$loops[a[,2]]]
 res$log.observed.expected.[a[,1]] = loops$log.observed.expected.[matches$loops[a[,2]]]
 colnames(res) = c("promoter", "enhancer", "raw.count", "log.observed.expected")
 
-write.table(res[,1:4], file = "access.txt", append = FALSE, quote = FALSE, sep = "\t",
+res$norm = (res[,4]-min(res[,4]))/(max(res[,4])-min(res[,4]))
+
+write.table(res[,c(1:3, 5)], file = "access.txt", append = FALSE, quote = FALSE, sep = "\t",
 eol = "\n", na = "NA", dec = ".", row.names = FALSE, col.names = FALSE, qmethod = c("escape", "double"),
 fileEncoding = "")
