@@ -81,9 +81,12 @@ def RMSprop(cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
         updates.append((p, p - lr * g))
     return updates
     
-def model(X, w1, w2, Max_Pooling_Shape, p_drop_conv):
-    l1 = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
-    pyx = softmax(T.dot(l1, w2))
+def model(X, X2, w1, w2, Max_Pooling_Shape, p_drop_conv):
+    # pool the features for raw data from first layer
+    l1a = T.flatten(dropout(max_pool_2d(rectify(conv2d(X, w1, border_mode='valid')), Max_Pooling_Shape), p_drop_conv), outdim=2)
+    # add one element to each row of l1
+    l1b = T.concatenate([l1a, T.reshape(X2, (-1, 1))], axis=1)
+    pyx = softmax(T.dot(l1b, w2))
     return pyx
 
 def learning(l_X, trY, ii, epchs, mini_batch_size):
@@ -190,10 +193,11 @@ max_pool_shape = (1, 5000000) # max pool maxtrix size
 
 # graphic parameters
 X = T.ftensor4()
+X2 = T.fmatrix()
 Y = T.fmatrix()
 # no hidden layer
 w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-w2 = init_weights((chip_motif_num, num_class))
+w2 = init_weights((chip_motif_num+1, num_class))
 
 noise_py_x = model(X, w1, w2, max_pool_shape, p_drop_conv)
 py_x = model(X, w1, w2, max_pool_shape, 0.)
@@ -212,21 +216,45 @@ dat_Y = gen_target("datY.dat", 2)               # target
 dat_X_E = np.concatenate((dat_X_E, np.zeros((1, 1, 17, 100))), axis=0)
 
 assign = []
+trX_loops = []
 for i in range(dat_X_P.shape[0]):
-    if i in matches:
-        assign.append((i, random.choice(matches[i])))
+    if len(matches[i])>0:
+        tmp = (i, random.choice(matches[i]))
+        assign.append(tmp)
+        trX_loops.append(loops[tmp])
     else:
         assign.append((i, -1))
+        trX_loops.append(0.0)
 assign = np.array(assign)
+trX_loops = np.array(trX_loops)
+
 # randomly drop 10% of the loops
-assign[random.sample(list(range(assign.shape[0])), round(assign.shape[0]*0.1)), 1] = -1
+index_drop = random.sample(list(range(assign.shape[0])), round(assign.shape[0]*0.1))
+assign[index_drop, 1] = -1
+trX_loops[index_drop] = 0.0
 # update enhancer-promoter unit (EPU)        
 trX = np.concatenate((dat_X_P, dat_X_E[assign[:,1]]), axis=3)
 trY = dat_Y
 
+learning(trX, trX_loops, trY, 0, epchs, mini_batch_size)
 
-learning(trX, trY, 0, epchs, mini_batch_size)
 
+
+
+
+trX = []
+for i in range(dat_X_P.shape[0]):
+    p = dat_X_P[i].reshape(1, 1, 17, -1)
+    if len(matches[i])>0:
+        trX.append(np.concatenate((np.array([p]*len(matches[i])).reshape(-1,1,17,100), dat_X_E[matches[i]].reshape(-1,1,17,100)), axis=3))
+    else:
+        trX.append(np.concatenate((p, dat_X_E[-1].reshape(-1,1,17,100)), axis=3))       
+
+costs = cross_entropy(predict(trX[0])[:,1], trY[[0]*(trX[0].shape[0]), 1])
+
+costs = cross_entropy(preds[:,1], y[[1]*len(enhancer_index)])
+res_X = tmp[np.argmin(costs)]
+res_E = matches[enhancer_index[np.argmin(costs)]]
 
 
 
