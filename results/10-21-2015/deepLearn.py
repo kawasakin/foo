@@ -204,11 +204,18 @@ EPU0 = np.concatenate((dat_X_P, dat_X_E[assgn0[:,1]]), axis=3)
 # learn paramters from EPU0      
 learning(EPU0, loop0, trY, 0, epchs, mini_batch_size)
 #########################################
+freq = collections.defaultdict(int)
 # update EPU based on the learned weights
 (MCH_UPDATED, EPU_UPDATED, LOP_UPDATED) = EPU_update(EPU_ALL, LOP_ALL, trY, matches)
-
-# initlize all the parameters of models
+for i in range(len(MCH_UPDATED)):
+    if(MCH_UPDATED[i]!=-1):
+        freq[(i, MCH_UPDATED[i])] += 1
+# randomly drop our 20% of enhancers.
+ind_sampled = random.sample(list(range(EPU_UPDATED.shape[0])), round(EPU_UPDATED.shape[0]*0.2))
+EPU_UPDATED[ind_sampled] = np.concatenate((dat_X_P[ind_sampled], dat_X_E[[-1]*len(ind_sampled)]), axis=3)
+LOP_UPDATED[ind_sampled] = 0.0
+# initlize all the parameters of models.
 w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
 w2 = init_weights((chip_motif_num+1, num_class))
-# learn the model again
+# learn the model again.
 learning(EPU_UPDATED, LOP_UPDATED, trY, 0, epchs, mini_batch_size)
