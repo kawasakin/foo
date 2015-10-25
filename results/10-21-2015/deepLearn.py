@@ -1,4 +1,4 @@
-# import all packages
+######################################### import all packages
 import theano
 from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
@@ -194,6 +194,8 @@ dat_X_P = gen_chip_feature("datX_P.dat", 100)    # promoter 5k
 dat_X_E = gen_chip_feature("datX_E.dat", 100)    # enhancer 5k
 dat_Y = gen_target("datY.dat", 2)               # target 
 (matches, loops) = gen_matches("access.txt")
+
+# add an empty enhancer to the end
 dat_X_E = np.concatenate((dat_X_E, np.zeros((1, 1, 17, 100))), axis=0)
 # all possible EPU for every promoter
 (EPU_ALL, LOP_ALL) = get_all_EPU(dat_X_P, dat_X_E, matches, loops)
@@ -202,20 +204,28 @@ dat_X_E = np.concatenate((dat_X_E, np.zeros((1, 1, 17, 100))), axis=0)
 # update enhancer-promoter unit (EPU) as the 0th model      
 EPU0 = np.concatenate((dat_X_P, dat_X_E[assgn0[:,1]]), axis=3)
 # learn paramters from EPU0      
-learning(EPU0, loop0, trY, 0, epchs, mini_batch_size)
+res = learning(EPU0, loop0, dat_Y, 0, epchs, mini_batch_size)
 #########################################
 freq = collections.defaultdict(int)
 # update EPU based on the learned weights
-(MCH_UPDATED, EPU_UPDATED, LOP_UPDATED) = EPU_update(EPU_ALL, LOP_ALL, trY, matches)
-for i in range(len(MCH_UPDATED)):
-    if(MCH_UPDATED[i]!=-1):
-        freq[(i, MCH_UPDATED[i])] += 1
-# randomly drop our 20% of enhancers.
-ind_sampled = random.sample(list(range(EPU_UPDATED.shape[0])), round(EPU_UPDATED.shape[0]*0.2))
-EPU_UPDATED[ind_sampled] = np.concatenate((dat_X_P[ind_sampled], dat_X_E[[-1]*len(ind_sampled)]), axis=3)
-LOP_UPDATED[ind_sampled] = 0.0
-# initlize all the parameters of models.
-w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
-w2 = init_weights((chip_motif_num+1, num_class))
-# learn the model again.
-learning(EPU_UPDATED, LOP_UPDATED, trY, 0, epchs, mini_batch_size)
+for mm in range(1, 50):
+    (MCH_UPDATED, EPU_UPDATED, LOP_UPDATED) = EPU_update(EPU_ALL, LOP_ALL, dat_Y, matches)
+    for i in range(len(MCH_UPDATED)):
+        if(MCH_UPDATED[i]!=-1):
+            freq[(i, MCH_UPDATED[i])] += 1
+    # randomly drop our 20% of enhancers.
+    ind_sampled = random.sample(list(range(EPU_UPDATED.shape[0])), round(EPU_UPDATED.shape[0]*0.2)) 
+    EPU_UPDATED[ind_sampled] = np.concatenate((dat_X_P[ind_sampled], dat_X_E[[-1]*len(ind_sampled)]), axis=3)
+    LOP_UPDATED[ind_sampled] = 0.0
+    # initlize all the parameters of models.
+    w1 = init_weights((chip_motif_num, 1, feat_num, chip_motif_len))
+    w2 = init_weights((chip_motif_num+1, num_class))
+    # learn the model again.
+    res = res + learning(EPU_UPDATED, LOP_UPDATED, dat_Y, mm, epchs, mini_batch_size)
+
+with open("rep1.targets.txt", "w") as fout:
+    for (key, value) in freq.items():
+        fout.write("\t".join(map(str, key)) + "\t" + str(value)+"\n") 
+
+#np.savetxt("rep1.res.txt", np.array(res[15:]).reshape(-1, 3))
+#np.savetxt("tmp", np.array(res[:15]))

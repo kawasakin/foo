@@ -10,7 +10,7 @@
 #PBS -A ren-group
 
 # iteractive nodes
-### qsub -I -q hotel -N cov_net -l nodes=10:ppn=2 -l walltime=100:00:00 -A ren-group 
+### qsub -I -q hotel -N deepLearn -l nodes=1:ppn=10 -l walltime=100:00:00 -A ren-group 
 
 PYTHON=/oasis/tscc/scratch/r3fang/usr/local/python2.7.10/usr/local/bin/python2.7
 GENE_FILE=/oasis/tscc/scratch/r3fang/github/foo/results/09-12-2015/mESC-zy27.gene.expr.sel
